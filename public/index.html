@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ODGJ Street Coffee — Ngopi Pinggir Jalan, Rasa Naik Kasta</title>
+<meta name="description" content="ODGJ Street Coffee. Kopi susu gula aren, es kopi item, dan menu ngopi khas gerobak jalanan. Scan, pesan, ambil.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%23E8452C%22/><text x=%2250%22 y=%2268%22 font-size=%2260%22 text-anchor=%22middle%22 fill=%22%23F2E9D8%22 font-family=%22sans-serif%22>O</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+<meta name="theme-color" content="#15130F">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta property="og:title" content="ODGJ Street Coffee — Ngopi Pinggir Jalan">
+<meta property="og:description" content="Kopi susu gula aren, es kopi item, dan menu ngopi khas gerobak jalanan. Scan, pesan, ambil.">
+<meta property="og:type" content="website">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- ===== Marquee ticker ===== -->
+<div class="ticker" aria-hidden="true">
+  <div class="ticker-track" id="tickerTrack">
+    <span>BUKA TIAP HARI 15.00 – 01.00</span>
+    <span>SCAN · PESAN · AMBIL</span>
+    <span>GRATIS ONGKIR RADIUS 2KM</span>
+    <span>KOPI SUSU GULA ARENNYA JUARA</span>
+  </div>
+</div>
+
+<!-- ===== Navigasi ===== -->
+<header class="nav" id="nav">
+  <div class="nav-row wrap">
+    <a href="#top" class="brandmark"><span class="dot"></span><span class="brand-txt">ODGJ <em>STREET</em> COFFEE</span></a>
+    <nav class="links">
+      <a href="#menu">Menu</a>
+      <a href="#cara">Cara Pesan</a>
+      <a href="#lokasi">Lokasi</a>
+    </nav>
+    <button class="cart-btn" id="openCart" aria-label="Buka keranjang">
+      <span class="cart-icon">🛒</span> Keranjang <span class="cart-count" id="cartCount">0</span>
+    </button>
+  </div>
+</header>
+
+<main id="top">
+
+<!-- ===== Hero ===== -->
+<section class="hero">
+  <div class="wrap hero-grid">
+    <div class="hero-copy">
+      <span class="eyebrow-tag">GEROBAK KOPI · DARI TROTOAR UNTUK SEMUA</span>
+      <h1>NGOPI<span class="out">PINGGIR JALAN</span></h1>
+      <p class="lede">Kopi susu gula aren, es kopi item, sampai americano dingin — diracik di gerobak, dipesan lewat HP. <strong>Nggak pakai antre, nggak pakai gengsi.</strong></p>
+      <div class="cta-row">
+        <a href="#menu" class="btn solid">Lihat menu</a>
+        <a href="#cara" class="btn ghost">Cara pesan →</a>
+      </div>
+      <div class="hero-stats" id="heroStats"></div>
+    </div>
+
+    <div class="hero-visual" aria-hidden="true">
+      <div class="cup-stage">
+        <span class="steam s1"></span><span class="steam s2"></span><span class="steam s3"></span>
+        <div class="cup"></div>
+        <div class="saucer"></div>
+      </div>
+      <div class="scan-chip">
+        <span class="scan-grid"></span>
+        <div class="scan-meta"><small>SCAN · PESAN · AMBIL</small><b id="scanCount">→</b></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== Banner antrean live ===== -->
+<div class="queue-band">
+  <div class="wrap queue-inner">
+    <span class="queue-label">GENJOT BIRU = SEDANG DIPROSES</span>
+    <div class="queue-now">
+      <span class="queue-live" id="queueLive">● ONLINE</span>
+      <b id="queueNow">#—</b>
+    </div>
+    <small class="queue-hint" id="queueHint">Antrean kosong</small>
+  </div>
+</div>
+
+<!-- ===== Cara pesan ===== -->
+<section class="section" id="cara">
+  <div class="wrap">
+    <div class="sec-head">
+      <div>
+        <span class="sec-kicker">/ 01</span>
+        <h2>Cara Pesan</h2>
+      </div>
+      <span class="idx">TANPA APLIKASI, TANPA RIBET</span>
+    </div>
+    <div class="steps">
+      <div class="step">
+        <span class="num">01</span>
+        <h3>Scan QR di gerobak</h3>
+        <p>Tiap gerobak punya kode QR sendiri. Scan pakai kamera HP, menu langsung kebuka di browser.</p>
+      </div>
+      <div class="step">
+        <span class="num">02</span>
+        <h3>Pilih &amp; masukin keranjang</h3>
+        <p>Tambah menu ke keranjang, atur takaran gula dan es sesuai selera lewat catatan pesanan.</p>
+      </div>
+      <div class="step">
+        <span class="num">03</span>
+        <h3>Bayar &amp; ambil di gerobak</h3>
+        <p>Bayar QRIS atau cash langsung ke barista. Nomor antrean muncul begitu pesanan diproses.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== Menu (dari database) ===== -->
+<section class="section section-menu" id="menu">
+  <div class="wrap">
+    <div class="sec-head">
+      <div>
+        <span class="sec-kicker">/ 02</span>
+        <h2>Papan Menu</h2>
+      </div>
+      <span class="idx" id="menuIdx">MEMUAT…</span>
+    </div>
+
+    <div class="menu-toolbar">
+      <div class="menu-filters" id="filters">
+        <button class="filter-btn active" data-cat="all">Semua</button>
+      </div>
+      <div class="search-box">
+        <span class="search-icon">⌕</span>
+        <input type="search" id="searchInput" placeholder="Cari menu…" aria-label="Cari menu">
+      </div>
+    </div>
+
+    <div class="menu-grid" id="menuGrid">
+      <div class="skel-grid">
+        <div class="skel"></div><div class="skel"></div>
+        <div class="skel"></div><div class="skel"></div>
+        <div class="skel"></div><div class="skel"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== Highlight gerobak ===== -->
+<section class="section" id="keunggulan">
+  <div class="wrap">
+    <div class="sec-head">
+      <div>
+        <span class="sec-kicker">/ 03</span>
+        <h2>Dari Gerobak</h2>
+      </div>
+      <span class="idx">SEHARI-HARI DI TROTOAR</span>
+    </div>
+    <div class="strip">
+      <div class="cell"><span class="cell-icon">✋</span><span>Racik manual<br>tiap gelas</span></div>
+      <div class="cell"><span class="cell-icon">🧊</span><span>Es batu kristal<br>bukan air keran</span></div>
+      <div class="cell"><span class="cell-icon">🍯</span><span>Gula aren cair<br>asli, bukan sirup</span></div>
+      <div class="cell"><span class="cell-icon">♻️</span><span>Cup daur ulang<br>ramah trotoar</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== Lokasi ===== -->
+<section class="section" id="lokasi">
+  <div class="wrap loc-grid">
+    <div>
+      <div class="sec-head">
+        <div>
+          <span class="sec-kicker">/ 04</span>
+          <h2>Lokasi &amp; Jam</h2>
+        </div>
+      </div>
+      <div class="loc-list">
+        <div class="row"><b>Alamat</b><span>Depan Indomaret, Jl. Trotoar Sejahtera No. 7</span></div>
+        <div class="row"><b>Senin–Jumat</b><span>15.00 – 01.00</span></div>
+        <div class="row"><b>Sabtu–Minggu</b><span>13.00 – 02.00</span></div>
+        <div class="row"><b>WhatsApp</b><span id="waText">0857-7013-0803</span></div>
+        <div class="row"><b>Radius antar</b><span>2 km, gratis ongkir</span></div>
+      </div>
+      <a href="https://wa.me/6285770130803" class="btn solid" id="waBtn" target="_blank" rel="noopener">Order via WhatsApp</a>
+    </div>
+    <div class="map-box">
+      <span class="pin">📍</span>
+      <p>Peta lokasi gerobak — pasang Google Maps embed di sini.</p>
+      <a href="https://maps.google.com/?q=odgj+street+coffee" class="btn ghost" target="_blank" rel="noopener">Buka di Google Maps →</a>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<!-- ===== Footer ===== -->
+<footer>
+  <div class="wrap">
+    <div class="foot-grid">
+      <div>
+        <h1 class="display">ODGJ<br>STREET<br>COFFEE</h1>
+        <p class="foot-note">Gerobak kopi jalanan. Menu diambil langsung dari PostgreSQL dan pesanan pelanggan tersimpan otomatis lewat server lokal.</p>
+      </div>
+      <div class="foot-col">
+        <h4>Navigasi</h4>
+        <a href="#menu">Menu</a>
+        <a href="#cara">Cara pesan</a>
+        <a href="#lokasi">Lokasi</a>
+      </div>
+      <div class="foot-col">
+        <h4>Kontak</h4>
+        <a href="https://wa.me/6285770130803" target="_blank" rel="noopener">WhatsApp</a>
+        <a href="#">Instagram</a>
+        <a href="#">TikTok</a>
+        <a href="admin.html">Dashboard Barista →</a>
+      </div>
+    </div>
+    <div class="foot-bottom">
+      <span>© <span id="year"></span> ODGJ STREET COFFEE — SEMUA HARGA BELUM TERMASUK GENGSI</span>
+      <span>E-MENU · POSTGRESQL · LOCALHOST</span>
+    </div>
+  </div>
+</footer>
+
+<!-- ===== Overlay & Keranjang ===== -->
+<div class="overlay" id="overlay"></div>
+<aside class="drawer" id="drawer" aria-label="Keranjang belanja">
+  <div class="drawer-head">
+    <div><h3>Keranjang</h3><small class="drawer-sub" id="drawerSub">0 item</small></div>
+    <button class="close-btn" id="closeCart" aria-label="Tutup keranjang">✕</button>
+  </div>
+  <div class="drawer-body" id="cartBody">
+    <p class="empty-cart">Keranjang masih kosong.<br>Tambah menu favoritmu dulu.</p>
+  </div>
+  <div class="drawer-foot">
+    <label class="field"><span>Nama kamu</span>
+      <input type="text" id="customerName" placeholder="cth: Rama" maxlength="64">
+    </label>
+    <label class="field"><span>Catatan (gula/es/request)</span>
+      <input type="text" id="orderNotes" placeholder="Gula sedikit, es normal" maxlength="500">
+    </label>
+    <div class="total-row"><span>Total</span><b id="cartTotal">Rp0</b></div>
+    <button class="btn solid" style="width:100%; justify-content:center;" id="checkoutBtn">
+      Pesan &amp; Bayar di Gerobak
+    </button>
+  </div>
+</aside>
+
+<!-- ===== Modal pilih level (gula/es) ===== -->
+<div class="modal" id="optionModal" aria-hidden="true">
+  <div class="modal-card modal-card-sm">
+    <button class="close-btn modal-close" id="closeOptionModal" aria-label="Tutup">✕</button>
+    <h3 id="optionTitle">Atur Pesanan</h3>
+    <p class="modal-sub" id="optionSub">—</p>
+
+    <div class="opt-group">
+      <label>Gula<small>Pilih manisnya</small></label>
+      <div class="opt-row" id="sugarOptions">
+        <button class="opt-btn" data-val="Gula sedikit">Sedikit</button>
+        <button class="opt-btn active" data-val="Gula normal">Normal</button>
+        <button class="opt-btn" data-val="Gula banyak">Banyak</button>
+      </div>
+    </div>
+    <div class="opt-group">
+      <label>Es<small>Banyaknya es batu</small></label>
+      <div class="opt-row" id="iceOptions">
+        <button class="opt-btn" data-val="Es sedikit">Sedikit</button>
+        <button class="opt-btn active" data-val="Es normal">Normal</button>
+        <button class="opt-btn" data-val="Es banyak">Banyak</button>
+      </div>
+    </div>
+
+    <div class="opt-summary" id="optionSummary">Gula normal · Es normal</div>
+    <button class="btn solid" style="width:100%; justify-content:center;" id="confirmOption">Tambah ke Keranjang</button>
+  </div>
+</div>
+
+<!-- ===== Modal sukses pesanan ===== -->
+<div class="modal" id="successModal" aria-hidden="true">
+  <div class="modal-card">
+    <button class="close-btn modal-close" id="closeModal" aria-label="Tutup">✕</button>
+    <span class="modal-badge">✔</span>
+    <h3>PESANAN MASUK!</h3>
+    <p class="modal-sub">Tunjukkan nomor ini ke barista</p>
+    <div class="queue-number" id="queueNumber">#01</div>
+    <p class="modal-note" id="orderSummary"></p>
+    <p class="modal-tiny" id="orderTiny">Status: Menunggu diproses · pembayaran QRIS / cash di gerobak</p>
+    <div class="modal-actions">
+      <button class="btn solid" style="width:100%; justify-content:center;" id="payQrisBtn">Bayar QRIS</button>
+      <button class="btn ghost" style="width:100%; justify-content:center;" id="waSendBtn">Lanjut ke WhatsApp</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Modal QRIS Payment ===== -->
+<div class="modal" id="qrisModal" aria-hidden="true">
+  <div class="modal-card modal-card-lg">
+    <button class="close-btn modal-close" id="closeQrisModal" aria-label="Tutup">✕</button>
+    <h3>BAYAR QRIS</h3>
+    <p class="modal-sub" id="qrisSub">Scan QR kode dengan aplikasi e-wallet / banking</p>
+    <div class="qris-container">
+      <div class="qris-code" id="qrisCode"></div>
+      <div class="qris-timer" id="qrisTimer">⏳ 05:00</div>
+    </div>
+    <p class="modal-tiny" id="qrisStatus">Menunggu pembayaran...</p>
+    <div class="modal-actions">
+      <button class="btn ghost" style="width:100%; justify-content:center;" id="cancelQrisBtn">Batal & Bayar di Gerobak</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<a class="wa-float" id="waFloat" href="https://wa.me/6285770130803" target="_blank" rel="noopener" aria-label="Chat WhatsApp">💬</a>
+
+<script src="/socket.io/socket.io.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard Barista — ODGJ Street Coffee</title>
+<meta name="theme-color" content="#15130F">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%23E8452C%22/><text x=%2250%22 y=%2268%22 font-size=%2260%22 text-anchor=%22middle%22 fill=%22%23F2E9D8%22 font-family=%22sans-serif%22>O</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Space+Mono:wght@400;700&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/admin.css">
+</head>
+<body class="admin">
+
+<!-- Login Screen -->
+<div id="loginScreen" class="login-screen" style="display:none;">
+  <div class="login-card">
+    <div class="login-header">
+      <span class="login-dot"></span>
+      <h1>ODGJ <em>BARISTA</em></h1>
+      <p>Masuk untuk mengakses dashboard</p>
+    </div>
+    <form id="loginForm">
+      <div class="login-field">
+        <label for="loginEmail">Email</label>
+        <input type="email" id="loginEmail" name="email" required autocomplete="email" placeholder="owner@odgj.com">
+      </div>
+      <div class="login-field">
+        <label for="loginPassword">Password</label>
+        <input type="password" id="loginPassword" name="password" required autocomplete="current-password" placeholder="••••••••">
+      </div>
+      <button type="submit" id="loginBtn" class="btn solid login-submit">Masuk</button>
+    </form>
+    <p class="login-hint">Role: owner, manager, barista, cashier</p>
+  </div>
+</div>
+
+<!-- Admin App -->
+<div id="adminApp" style="display:none;">
+<header class="a-nav">
+  <div class="wrap a-nav-row">
+    <a href="/" class="a-brand"><span class="a-dot"></span>ODGJ <em>BARISTA</em></a>
+    <div class="a-live" id="liveDot">● CONNECTING...</div>
+    <div id="userInfo" class="a-user"></div>
+    <button id="logoutBtn" class="a-btn-logout">Keluar</button>
+  </div>
+</header>
+
+<!-- Sidebar Navigation -->
+<nav class="a-sidebar" id="sidebar">
+  <div class="a-sidebar-header">
+    <h3>Menu</h3>
+    <button class="a-sidebar-toggle" id="sidebarToggle" aria-label="Tutup sidebar">✕</button>
+  </div>
+  <ul class="a-sidebar-menu">
+    <li><button class="a-sidebar-btn active" data-view="orders"><span class="a-sidebar-icon">📋</span> Pesanan</button></li>
+    <li><button class="a-sidebar-btn" data-view="reservations"><span class="a-sidebar-icon">📅</span> Reservasi</button></li>
+    <li><button class="a-sidebar-btn" data-view="payments"><span class="a-sidebar-icon">💳</span> Pembayaran</button></li>
+    <li><button class="a-sidebar-btn" data-view="menu" id="menuNav"><span class="a-sidebar-icon">☕</span> Menu</button></li>
+    <li><button class="a-sidebar-btn" data-view="tables"><span class="a-sidebar-icon">🪑</span> Meja</button></li>
+    <li><button class="a-sidebar-btn" data-view="reports"><span class="a-sidebar-icon">📊</span> Laporan</button></li>
+    <li><button class="a-sidebar-btn" data-view="users" id="usersNav"><span class="a-sidebar-icon">👥</span> Pengguna</button></li>
+  </ul>
+  <button class="a-sidebar-overlay" id="sidebarOverlay" aria-label="Tutup sidebar"></button>
+</nav>
+
+<main class="wrap a-main">
+  <!-- Orders View (default) -->
+  <section id="view-orders" class="a-view active">
+    <div class="a-head">
+      <div>
+        <h1>Antrean Pesanan</h1>
+        <p>Realtime via WebSocket · status bisa langsung diganti</p>
+      </div>
+      <div class="a-stats" id="aStats"></div>
+    </div>
+    <div class="a-board" id="aBoard">
+      <div class="a-empty">Memuat pesanan…</div>
+    </div>
+  </section>
+
+  <!-- Reservations View -->
+  <section id="view-reservations" class="a-view">
+    <div class="a-head">
+      <div>
+        <h1>Reservasi Meja</h1>
+        <p>Kelola booking meja & check-in</p>
+      </div>
+      <div class="a-filters">
+        <select id="resStatusFilter">
+          <option value="">Semua Status</option>
+          <option value="pending">Pending</option>
+          <option value="confirmed">Confirmed</option>
+          <option value="paid">Paid</option>
+          <option value="seated">Seated</option>
+          <option value="cancelled">Cancelled</option>
+        </select>
+        <input type="date" id="resDateFilter">
+      </div>
+    </div>
+    <div class="a-board" id="resBoard">
+      <div class="a-empty">Memuat reservasi…</div>
+    </div>
+  </section>
+
+  <!-- Payments View -->
+  <section id="view-payments" class="a-view">
+    <div class="a-head">
+      <div>
+        <h1>Pembayaran QRIS</h1>
+        <p>Monitor transaksi Midtrans</p>
+      </div>
+      <div class="a-filters">
+        <select id="payStatusFilter">
+          <option value="">Semua Status</option>
+          <option value="pending">Pending</option>
+          <option value="settlement">Settlement</option>
+          <option value="expire">Expired</option>
+          <option value="cancel">Cancelled</option>
+          <option value="deny">Denied</option>
+        </select>
+      </div>
+    </div>
+    <div class="a-board" id="payBoard">
+      <div class="a-empty">Memuat pembayaran…</div>
+    </div>
+  </section>
+
+  <!-- Menu View (Owner/Manager only) -->
+  <section id="view-menu" class="a-view">
+    <div class="a-head">
+      <div>
+        <h1>Manajemen Menu</h1>
+        <p>Tambah, edit, hapus item menu</p>
+      </div>
+      <button class="btn solid" id="addMenuBtn">+ Tambah Menu</button>
+    </div>
+    <div class="a-board" id="menuBoard">
+      <div class="a-empty">Memuat menu…</div>
+    </div>
+  </section>
+
+  <!-- Tables View -->
+  <section id="view-tables" class="a-view">
+    <div class="a-head">
+      <div>
+        <h1>Manajemen Meja</h1>
+        <p>Kelola meja untuk reservasi</p>
+      </div>
+      <button class="btn solid" id="addTableBtn">+ Tambah Meja</button>
+    </div>
+    <div class="a-board" id="tablesBoard">
+      <div class="a-empty">Memuat meja…</div>
+    </div>
+  </section>
+
+  <!-- Reports View -->
+  <section id="view-reports" class="a-view">
+    <div class="a-head">
+      <div>
+        <h1>Laporan Harian</h1>
+        <p>Ringkasan penjualan & pembayaran</p>
+      </div>
+      <div class="a-filters">
+        <input type="date" id="reportDate" value="">
+      </div>
+    </div>
+    <div class="a-stats" id="reportStats"></div>
+    <div class="a-board" id="reportBoard">
+      <div class="a-empty">Memuat laporan…</div>
+    </div>
+  </section>
+
+  <!-- Users View (Owner only) -->
+  <section id="view-users" class="a-view">
+    <div class="a-head">
+      <div>
+        <h1>Manajemen Pengguna</h1>
+        <p>Tambah, edit, hapus akun staff</p>
+      </div>
+      <button class="btn solid" id="addUserBtn">+ Tambah User</button>
+    </div>
+    <div class="a-board" id="usersBoard">
+      <div class="a-empty">Memuat pengguna…</div>
+    </div>
+  </section>
+</main>
+
+<!-- Modal for Menu CRUD -->
+<div class="modal" id="menuModal" aria-hidden="true">
+  <div class="modal-card modal-card-lg">
+    <button class="close-btn modal-close" id="closeMenuModal" aria-label="Tutup">✕</button>
+    <h3 id="menuModalTitle">Tambah Menu</h3>
+    <form id="menuForm">
+      <input type="hidden" id="menuItemId">
+      <div class="field">
+        <label>Nama</label>
+        <input type="text" id="menuName" required maxlength="80">
+      </div>
+      <div class="field">
+        <label>Deskripsi</label>
+        <textarea id="menuDesc" required maxlength="255"></textarea>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label>Kategori</label>
+          <select id="menuCategory" required>
+            <option value="">Pilih kategori</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Harga (Rp)</label>
+          <input type="number" id="menuPrice" required min="0" step="100">
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label>Emoji</label>
+          <input type="text" id="menuEmoji" maxlength="16" placeholder="☕">
+        </div>
+        <div class="field">
+          <label>Urutan</label>
+          <input type="number" id="menuSort" value="0" min="0">
+        </div>
+      </div>
+      <!-- ═══════════════════════════════════════════════════════════════ -->
+      <!-- 🖼️  GANTI FOTO MENU: Edit URL di bawah atau pakai Admin Panel     -->
+      <!-- ═══════════════════════════════════════════════════════════════ -->
+      <div class="field">
+        <label>URL Foto <small>(paste link gambar dari internet atau upload)</small></label>
+        <input type="url" id="menuPhotoUrl" placeholder="https://contoh.com/gambar.jpg" maxlength="500">
+        <div id="menuPhotoPreview" style="margin-top:8px; width:100%; height:180px; background:var(--asphalt); border:1px dashed var(--line-strong); display:flex; align-items:center; justify-content:center; overflow:hidden;">
+          <span style="color:var(--concrete); font-size:13px;">Preview foto muncul di sini</span>
+        </div>
+        <small style="color:var(--concrete); display:block; margin-top:4px;">
+          💡 Tips: Pakai https://images.unsplash.com/... atau link gambar dari Google Images. Kosongkan jika tidak pakai foto.
+        </small>
+      </div>
+      <div class="field-row">
+        <label class="checkbox-field">
+          <input type="checkbox" id="menuAvailable" checked> Tersedia
+        </label>
+        <label class="checkbox-field">
+          <input type="checkbox" id="menuBestseller"> Best Seller
+        </label>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn ghost" id="cancelMenuBtn">Batal</button>
+        <button type="submit" class="btn solid">Simpan</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal for Table CRUD -->
+<div class="modal" id="tableModal" aria-hidden="true">
+  <div class="modal-card modal-card-lg">
+    <button class="close-btn modal-close" id="closeTableModal" aria-label="Tutup">✕</button>
+    <h3 id="tableModalTitle">Tambah Meja</h3>
+    <form id="tableForm">
+      <input type="hidden" id="tableId">
+      <div class="field-row">
+        <div class="field">
+          <label>Nama Meja</label>
+          <input type="text" id="tableName" required maxlength="32" placeholder="Meja 1">
+        </div>
+        <div class="field">
+          <label>Kapasitas</label>
+          <input type="number" id="tableCapacity" required min="1" value="4">
+        </div>
+      </div>
+      <div class="field">
+        <label>Lokasi</label>
+        <input type="text" id="tableLocation" maxlength="64" placeholder="Dalam / Luar / Balkon">
+      </div>
+      <div class="field">
+        <label class="checkbox-field">
+          <input type="checkbox" id="tableActive" checked> Aktif
+        </label>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn ghost" id="cancelTableBtn">Batal</button>
+        <button type="submit" class="btn solid">Simpan</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal for User CRUD -->
+<div class="modal" id="userModal" aria-hidden="true">
+  <div class="modal-card modal-card-lg">
+    <button class="close-btn modal-close" id="closeUserModal" aria-label="Tutup">✕</button>
+    <h3 id="userModalTitle">Tambah User</h3>
+    <form id="userForm">
+      <input type="hidden" id="userId">
+      <div class="field">
+        <label>Nama Lengkap</label>
+        <input type="text" id="userFullName" required maxlength="100">
+      </div>
+      <div class="field">
+        <label>Email</label>
+        <input type="email" id="userEmail" required maxlength="128">
+      </div>
+      <div class="field">
+        <label>Password <small>(kosongkan jika tidak diubah)</small></label>
+        <input type="password" id="userPassword" minlength="8">
+      </div>
+      <div class="field">
+        <label>Role</label>
+        <select id="userRole" required>
+          <option value="staff">Staff</option>
+          <option value="cashier">Cashier</option>
+          <option value="barista">Barista</option>
+          <option value="manager">Manager</option>
+          <option value="owner">Owner</option>
+        </select>
+      </div>
+      <div class="field">
+        <label class="checkbox-field">
+          <input type="checkbox" id="userActive" checked> Aktif
+        </label>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn ghost" id="cancelUserBtn">Batal</button>
+        <button type="submit" class="btn solid">Simpan</button      </div>
+    </form>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script src="js/admin.js"></script>
+</body>
+</html>

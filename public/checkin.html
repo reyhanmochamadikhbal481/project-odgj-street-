@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Check-in Reservasi — ODGJ Street Coffee</title>
+<meta name="description" content="Check-in reservasi meja ODGJ Street Coffee via QR code">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%23E8452C%22/><text x=%2250%22 y=%2268%22 font-size=%2260%22 text-anchor=%22middle%22 fill=%22%23F2E9D8%22 font-family=%22sans-serif%22>O</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Space+Mono:wght@400;700&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+<meta name="theme-color" content="#15130F">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div class="ticker" aria-hidden="true">
+  <div class="ticker-track" id="tickerTrack">
+    <span>BUKA TIAP HARI 15.00 – 01.00</span>
+    <span>SCAN · CHECK-IN · NIKMATI</span>
+    <span>RESERVASI MEJA SIAP DITEMPATI</span>
+  </div>
+</div>
+
+<header class="nav" id="nav">
+  <div class="nav-row wrap">
+    <a href="/" class="brandmark"><span class="dot"></span><span class="brand-txt">ODGJ <em>STREET</em> COFFEE</span></a>
+    <nav class="links">
+      <a href="/#menu">Menu</a>
+      <a href="/#cara">Cara Pesan</a>
+      <a href="/#lokasi">Lokasi</a>
+    </nav>
+  </div>
+</header>
+
+<main id="top">
+  <section class="section section-menu" style="min-height: 60vh;">
+    <div class="wrap" style="text-align: center;">
+      <div class="sec-head">
+        <div>
+          <span class="sec-kicker">/ CHECK-IN</span>
+          <h2>Reservasi Meja</h2>
+        </div>
+        <span class="idx">SCAN QR UNTUK MASUK</span>
+      </div>
+
+      <div id="checkinCard" style="max-width: 400px; margin: 2rem auto;">
+        <div class="checkin-state" id="stateLoading">
+          <div class="cup-stage" style="margin: 0 auto 1.5rem;">
+            <span class="steam s1"></span><span class="steam s2"></span><span class="steam s3"></span>
+            <div class="cup"></div>
+            <div class="saucer"></div>
+          </div>
+          <p>Memverifikasi reservasi...</p>
+        </div>
+
+        <div class="checkin-state" id="stateSuccess" style="display: none;">
+          <div class="modal-badge" style="font-size: 4rem; margin-bottom: 1rem;">✔</div>
+          <h3>CHECK-IN BERHASIL!</h3>
+          <p class="modal-sub">Meja Anda sudah siap</p>
+          <div class="queue-number" id="tableNumber">Meja #—</div>
+          <p class="modal-note" id="bookingInfo"></p>
+          <a href="/" class="btn solid" style="width: 100%; justify-content: center; margin-top: 1rem;">Kembali ke Beranda</a>
+        </div>
+
+        <div class="checkin-state" id="stateError" style="display: none;">
+          <div class="modal-badge" style="font-size: 4rem; margin-bottom: 1rem; background: #fee; color: #c00;">✕</div>
+          <h3>CHECK-IN GAGAL</h3>
+          <p class="modal-sub" id="errorMessage">Terjadi kesalahan</p>
+          <a href="/" class="btn ghost" style="width: 100%; justify-content: center; margin-top: 1rem;">Kembali ke Beranda</a>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="foot-bottom">
+      <span>© <span id="year"></span> ODGJ STREET COFFEE</span>
+    </div>
+  </div>
+</footer>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function() {
+  const $ = (id) => document.getElementById(id);
+  const fmtRp = (n) => 'Rp' + Number(n).toLocaleString('id-ID');
+  const fmtTime = (iso) => new Date(iso).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+  const fmtDate = (iso) => new Date(iso).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long' });
+
+  function getReservationId() {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('id');
+  }
+
+  async function checkIn() {
+    const id = getReservationId();
+    if (!id) {
+      showError('ID reservasi tidak ditemukan di URL');
+      return;
+    }
+
+    try {
+      const res = await fetch('/api/reservations/' + id + '/checkin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      const data = await res.json();
+      
+      if (!res.ok) {
+        throw new Error(data.error || 'Check-in gagal');
+      }
+
+      showSuccess(data);
+    } catch (err) {
+      showError(err.message);
+    }
+  }
+
+  function showLoading() {
+    $('stateLoading').style.display = 'block';
+    $('stateSuccess').style.display = 'none';
+    $('stateError').style.display = 'none';
+  }
+
+  function showSuccess(data) {
+    $('stateLoading').style.display = 'none';
+    $('stateError').style.display = 'none';
+    $('stateSuccess').style.display = 'block';
+    $('tableNumber').textContent = 'Meja #' + data.table_id;
+    $('bookingInfo').textContent = 'Booking: ' + data.booking_code;
+  }
+
+  function showError(msg) {
+    $('stateLoading').style.display = 'none';
+    $('stateSuccess').style.display = 'none';
+    $('stateError').style.display = 'block';
+    $('errorMessage').textContent = msg;
+  }
+
+  function duplicateTicker() {
+    const track = $('tickerTrack');
+    track.innerHTML = track.innerHTML + ' ' + track.innerHTML.trim();
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    $('year').textContent = new Date().getFullYear();
+    duplicateTicker();
+    checkIn();
+  });
+})();
+</script>
+</body>
+</html>

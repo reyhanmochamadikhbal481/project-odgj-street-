@@ -1,0 +1,101 @@
+/* ============================================================
+   ODGJ STREET COFFEE — Dashboard Barista
+   ============================================================ */
+
+/* Reset & dasar */
+*{box-sizing:border-box; margin:0; padding:0;}
+:root{
+  --asphalt:#15130F;
+  --asphalt-2:#1E1B14;
+  --asphalt-3:#26211A;
+  --paper:#EFE7D6;
+  --paper-dim:#D9CFB8;
+  --cone:#E8452C;
+  --cone-dark:#B93419;
+  --spray:#F2C230;
+  --concrete:#8B8579;
+  --line:rgba(239,231,214,0.14);
+  --line-strong:rgba(239,231,214,0.28);
+  --font-mono:'Space Mono',monospace;
+  --font-display:'Anton',sans-serif;
+  --font-body:'Inter',sans-serif;
+}
+body.admin{
+  background:var(--asphalt);
+  color:var(--paper);
+  font-family:var(--font-body);
+  min-height:100vh;
+}
+.wrap{ max-width:1080px; margin:0 auto; padding:0 20px;}
+
+/* Nav bar */
+.a-nav{
+  position:sticky; top:0; z-index:40;
+  background:rgba(21,19,15,0.9);
+  backdrop-filter:blur(8px);
+  border-bottom:1px solid var(--line);
+}
+.a-nav-row{ display:flex; align-items:center; justify-content:space-between; padding:14px 20px;}
+.a-brand{ font-family:var(--font-display); font-size:20px; text-transform:uppercase; color:var(--paper); text-decoration:none; display:flex; align-items:center; gap:10px;}
+.a-brand em{ color:var(--cone); font-style:normal;}
+.a-dot{ width:10px; height:10px; background:var(--cone); border-radius:50%; animation:blink 1.6s steps(2) infinite;}
+@keyframes blink{ 50%{opacity:0.15;} }
+.a-live{ font-family:var(--font-mono); font-size:12px; font-weight:700; color:#4ade80; background:rgba(74,222,128,0.1); padding:6px 12px; border:1px solid rgba(74,222,128,0.3);}
+.a-live.off{ color:var(--concrete); border-color:var(--line-strong); background:transparent;}
+
+/* Header */
+.a-main{ padding:30px 20px 60px;}
+.a-head{ display:flex; justify-content:space-between; gap:16px; align-items:flex-end; flex-wrap:wrap; margin-bottom:22px;}
+.a-head h1{ font-family:var(--font-display); font-size:clamp(26px,4vw,38px); font-weight:400; text-transform:uppercase;}
+.a-head p{ font-size:12px; color:var(--concrete);}
+.a-stats{ display:flex; gap:8px; flex-wrap:wrap;}
+.a-stat{ font-family:var(--font-mono); font-size:12px; padding:8px 12px; border:1px solid var(--line-strong);}
+.a-stat b{ font-size:16px; display:block; line-height:1.1;}
+
+/* Kartu pesanan */
+.a-board{ display:grid; grid-template-columns:1fr; gap:14px;}
+.a-card{
+  display:grid; grid-template-columns:auto 1fr auto; gap:18px;
+  background:var(--asphalt-2); border:1px solid var(--line-strong);
+  padding:18px 20px; align-items:center;
+  border-left:4px solid var(--concrete);
+  transition:border-color 0.2s;
+}
+.a-card.st-baru{ border-left-color:#60a5fa;}
+.a-card.st-diproses{ border-left-color:var(--spray);}
+.a-card.st-siap{ border-left-color:#4ade80;}
+.a-card.st-selesai{ opacity:0.55;}
+.a-qnum{ font-family:var(--font-display); font-size:34px; color:var(--spray); line-height:1; min-width:74px;}
+.a-id{ font-family:var(--font-mono); font-size:10px; color:var(--concrete); display:block; margin-top:4px;}
+.a-info h3{ font-size:15px;}
+.a-meta{ font-family:var(--font-mono); font-size:11px; color:var(--paper-dim); margin:4px 0 8px;}
+.a-items{ font-size:12px; color:var(--paper);}
+.a-items li{ list-style:none; margin:3px 0; display:flex; justify-content:space-between; gap:12px;}
+.a-opt{ color:var(--spray); font-size:11px; font-family:var(--font-mono);}
+.a-note{ font-family:var(--font-mono); font-size:11px; color:var(--concrete); margin-top:6px; font-style:italic;}
+.a-total{ font-family:var(--font-mono); font-weight:700; color:var(--spray); font-size:15px;}
+.a-time{ font-family:var(--font-mono); font-size:10px; color:var(--concrete); margin-top:4px;}
+.a-actions{ display:flex; flex-direction:column; gap:8px; min-width:130px;}
+.a-btn{
+  font-family:var(--font-mono); font-size:11px; font-weight:700; text-transform:uppercase;
+  padding:9px 12px; border:1px solid var(--line-strong); background:transparent;
+  color:var(--paper-dim); cursor:pointer; letter-spacing:0.5px; transition:all 0.15s;
+}
+.a-btn:hover{ background:var(--paper); color:var(--asphalt); border-color:var(--paper);}
+.a-btn.diproses:hover{ background:var(--spray); border-color:var(--spray); color:var(--asphalt);}
+.a-btn.siap:hover{ background:#4ade80; border-color:#4ade80; color:var(--asphalt);}
+.a-btn.selesai:hover{ background:#60a5fa; border-color:#60a5fa; color:var(--asphalt);}
+.a-empty{ grid-column:1/-1; text-align:center; color:var(--concrete); font-family:var(--font-mono); padding:60px 0;}
+
+/* Status label */
+.a-st{ font-family:var(--font-mono); font-size:10px; font-weight:700; letter-spacing:1px; padding:3px 8px; text-transform:uppercase;}
+.st-baru .a-st{ color:#60a5fa;}
+.st-diproses .a-st{ color:var(--spray);}
+.st-siap .a-st{ color:#4ade80;}
+.st-selesai .a-st{ color:var(--concrete);}
+
+@media(max-width:640px){
+  .a-card{ grid-template-columns:auto 1fr; }
+  .a-qnum{ font-size:26px; }
+  .a-actions{ grid-column:1/-1; flex-direction:row; flex-wrap:wrap; min-width:0;}
+}

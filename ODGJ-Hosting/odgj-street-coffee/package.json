@@ -1,0 +1,25 @@
+{
+  "name": "odgj-street-coffee",
+  "version": "1.0.0",
+  "description": "E-menu ODGJ Street Coffee — frontend + backend dengan PostgreSQL",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "setup": "node scripts/setup.js"
+  },
+  "keywords": [
+    "coffee",
+    "e-menu",
+    "express",
+    "postgresql"
+  ],
+  "author": "ODGJ Street Coffee",
+  "license": "MIT",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.2",
+    "pg": "^8.13.1"
+  }
+}

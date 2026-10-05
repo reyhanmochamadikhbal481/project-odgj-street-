@@ -1,0 +1,13 @@
+# Dependencies
+node_modules/
+
+# Environment (jangan commit password ke git)
+.env
+
+# Log
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db

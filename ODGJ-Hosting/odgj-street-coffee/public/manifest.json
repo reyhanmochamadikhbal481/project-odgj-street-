@@ -1,0 +1,15 @@
+{
+  "name": "ODGJ Street Coffee",
+  "short_name": "ODGJ Coffee",
+  "description": "Kopi susu gula aren dan menu ngopi khas gerobak jalanan. Scan, pesan, ambil.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#15130F",
+  "theme_color": "#15130F",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

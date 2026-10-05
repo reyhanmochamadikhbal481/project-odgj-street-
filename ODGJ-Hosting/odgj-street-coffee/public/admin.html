@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard Barista — ODGJ Street Coffee</title>
+<meta name="theme-color" content="#15130F">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%23E8452C%22/><text x=%2250%22 y=%2268%22 font-size=%2260%22 text-anchor=%22middle%22 fill=%22%23F2E9D8%22 font-family=%22sans-serif%22>O</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Space+Mono:wght@400;700&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/admin.css">
+</head>
+<body class="admin">
+
+<header class="a-nav">
+  <div class="wrap a-nav-row">
+    <a href="/" class="a-brand"><span class="a-dot"></span>ODGJ <em>BARISTA</em></a>
+    <div class="a-live" id="liveDot">● ONLINE</div>
+  </div>
+</header>
+
+<main class="wrap a-main">
+  <div class="a-head">
+    <div>
+      <h1>Antrean Pesanan</h1>
+      <p>Autorefresh tiap 3 detik · status bisa langsung diganti</p>
+    </div>
+    <div class="a-stats" id="aStats"></div>
+  </div>
+
+  <div class="a-board" id="aBoard">
+    <div class="a-empty">Memuat pesanan…</div>
+  </div>
+</main>
+
+<script src="js/admin.js"></script>
+</body>
+</html>
