@@ -1,15 +1,25 @@
 {
+  "id": "/?source=pwa",
   "name": "ODGJ Street Coffee",
   "short_name": "ODGJ Coffee",
   "description": "Kopi susu gula aren dan menu ngopi khas gerobak jalanan. Scan, pesan, ambil.",
-  "start_url": "/",
+  "start_url": "/?source=pwa",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait",
+  "lang": "id",
+  "categories": ["food", "shopping", "lifestyle"],
   "background_color": "#15130F",
   "theme_color": "#15130F",
   "icons": [
-    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
-    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Lihat Menu", "url": "/#menu", "description": "Buka papan menu" },
+    { "name": "Lacak Antrean", "url": "/#menu", "description": "Cek nomor antrean live" },
+    { "name": "Dashboard Barista", "url": "/admin", "description": "Kelola pesanan" }
   ]
 }

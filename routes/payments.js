@@ -10,9 +10,10 @@ const router = express.Router();
 const MIDTRANS_SERVER_KEY = process.env.MIDTRANS_SERVER_KEY || 'SB-Mid-server-XXXXXXXX';
 const MIDTRANS_CLIENT_KEY = process.env.MIDTRANS_CLIENT_KEY || 'SB-Mid-client-XXXXXXXX';
 const MIDTRANS_IS_PRODUCTION = process.env.MIDTRANS_IS_PRODUCTION === 'true';
-const MIDTRANS_BASE = MIDTRANS_IS_PRODUCTION
-  ? 'https://api.midtrans.com'
-  : 'https://api.sandbox.midtrans.com';
+// Snap API (bukan /v2/token): sandbox app.sandbox.midtrans.com/snap/v1/transactions
+const SNAP_BASE = MIDTRANS_IS_PRODUCTION
+  ? 'https://app.midtrans.com/snap/v1'
+  : 'https://app.sandbox.midtrans.com/snap/v1';
 
 function midtransAuth() {
   return 'Basic ' + Buffer.from(MIDTRANS_SERVER_KEY + ':').toString('base64');
@@ -48,6 +49,16 @@ router.post('/deposit/create', async (req, res) => {
       return res.status(409).json({ error: 'DP sudah dibayar' });
     }
 
+    // MOCK MODE (dev): tanpa memanggil Midtrans
+    if (process.env.PAYMENTS_MOCK === 'true' || MIDTRANS_SERVER_KEY.includes('XXX') || MIDTRANS_SERVER_KEY.includes('xxx')) {
+      const mockRef = `MOCK-RES-${reservation_id}-${Date.now()}`;
+      await pool.query(
+        `UPDATE deposit_payments SET gateway_ref = $1, raw_payload = $2, updated_at = NOW() WHERE id = $3`,
+        [mockRef, JSON.stringify({ mock: true, reservation_id }), reservation.deposit_id]
+      );
+      return res.json({ token: mockRef, redirect_url: null, qr_string: null, mock: true, deposit_payment_id: reservation.deposit_id });
+    }
+
     const snapPayload = {
       transaction_details: {
         order_id: `ODGJ-RES-${reservation.id}-${Date.now()}`,
@@ -71,7 +82,7 @@ router.post('/deposit/create', async (req, res) => {
       },
     };
 
-    const midtransRes = await fetch(`${MIDTRANS_BASE}/v2/token`, {
+    const midtransRes = await fetch(`${SNAP_BASE}/transactions`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -136,12 +147,27 @@ router.post('/create', async (req, res) => {
 
     // Buat payment record pending
     const payRes = await pool.query(
-      `INSERT INTO payments (order_id, method, gateway, amount, status)
-       VALUES ($1, 'qris', 'midtrans', $2, 'pending')
+      `INSERT INTO payments (order_id, method, gateway, amount, status, mock)
+       VALUES ($1, 'qris', 'midtrans', $2, 'pending', $3)
        RETURNING *`,
-      [order_id, order.total]
+      [order_id, order.total, process.env.PAYMENTS_MOCK === 'true']
     );
     const payment = payRes.rows[0];
+
+    // MOCK MODE (dev tanpa kredensial Midtrans): kembalikan QR dummy
+    if (process.env.PAYMENTS_MOCK === 'true' || MIDTRANS_SERVER_KEY.includes('XXX') || MIDTRANS_SERVER_KEY.includes('xxx')) {
+      const mockRef = `MOCK-${order.id}-${Date.now()}`;
+      await pool.query(`UPDATE payments SET gateway_ref=$1, raw_payload=$2, updated_at=NOW() WHERE id=$3`,
+        [mockRef, JSON.stringify({ mock: true, order_id }), payment.id]);
+      return res.json({
+        token: mockRef,
+        redirect_url: null,
+        qr_string: null,
+        mock: true,
+        payment_id: payment.id,
+        message: 'MOCK QRIS — gunakan POST /api/payments/mock-settle untuk simulasi settlement',
+      });
+    }
 
     // Panggil Midtrans Snap API
     const snapPayload = {
@@ -167,7 +193,7 @@ router.post('/create', async (req, res) => {
       },
     };
 
-    const midtransRes = await fetch(`${MIDTRANS_BASE}/v2/token`, {
+    const midtransRes = await fetch(`${SNAP_BASE}/transactions`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -200,6 +226,42 @@ router.post('/create', async (req, res) => {
     console.error('[payment/create] error:', err.message);
     res.status(500).json({ error: 'Gagal membuat pembayaran' });
   }
+});
+
+/**
+ * POST /api/payments/mock-settle — simulasi settlement (hanya bila PAYMENTS_MOCK=true)
+ * Body: { order_id } → settlement + emit OrderPaid (stok + jurnal jalan)
+ */
+router.post('/mock-settle', async (req, res) => {
+  if (process.env.PAYMENTS_MOCK !== 'true') return res.status(403).json({ error: 'Mock mode nonaktif.' });
+  try {
+    const { order_id } = req.body;
+    const pay = (await pool.query(`SELECT * FROM payments WHERE order_id=$1 ORDER BY created_at DESC LIMIT 1`, [order_id])).rows[0];
+    if (!pay) return res.status(404).json({ error: 'Payment tidak ditemukan. Buat dulu via /create.' });
+    await pool.query(`UPDATE payments SET status='settlement', paid_at=NOW(), updated_at=NOW() WHERE id=$1`, [pay.id]);
+    const orderRes = await pool.query(`SELECT id, total FROM orders WHERE id=$1`, [order_id]);
+    eventBus.publish('OrderPaid', order_id, { order_id, payment_id: pay.id, amount: orderRes.rows[0]?.total || pay.amount, method: pay.method, gateway_ref: pay.gateway_ref, mock: true });
+    res.json({ message: 'Mock settlement OK, OrderPaid di-emit', payment_id: pay.id });
+  } catch (err) { res.status(500).json({ error: 'Gagal mock settle.' }); }
+});
+
+/**
+ * POST /api/payments/cash — bayar cash di gerobak (kasir) → langsung settlement + OrderPaid
+ * Body: { order_id, amount? }
+ */
+router.post('/cash', authenticate, requireRole('owner', 'manager', 'barista', 'cashier'), async (req, res) => {
+  try {
+    const { order_id, amount } = req.body;
+    if (!order_id) return res.status(400).json({ error: 'order_id wajib' });
+    const orderRes = await pool.query(`SELECT id, total FROM orders WHERE id=$1`, [order_id]);
+    if (!orderRes.rowCount) return res.status(404).json({ error: 'Order tidak ditemukan' });
+    const total = Number(amount) || orderRes.rows[0].total;
+    const pay = (await pool.query(
+      `INSERT INTO payments (order_id, method, gateway, amount, status, paid_at) VALUES ($1,'cash','manual',$2,'settlement',NOW()) RETURNING *`,
+      [order_id, total])).rows[0];
+    eventBus.publish('OrderPaid', order_id, { order_id, payment_id: pay.id, amount: total, method: 'cash', gateway_ref: `CASH-${pay.id}` });
+    res.status(201).json(pay);
+  } catch (err) { res.status(500).json({ error: 'Gagal catat cash.' }); }
 });
 
 /**
@@ -240,8 +302,8 @@ router.post('/webhook', async (req, res) => {
         // Buat deposit payment baru (idempotent fallback)
         await pool.query(
           `INSERT INTO deposit_payments (reservation_id, amount, method, gateway, gateway_ref, status, raw_payload, paid_at)
-           VALUES ($1, 'qris', 'midtrans', $2, $3, $4, $5, $6)`,
-          [internalId, transaction_id, gross_amount, mappedStatus, JSON.stringify(payload), mappedStatus === 'settlement' ? new Date() : null]
+           VALUES ($1, $2, 'qris', 'midtrans', $3, $4, $5, $6)`,
+          [internalId, Number(gross_amount) || 0, transaction_id, mappedStatus, JSON.stringify(payload), mappedStatus === 'settlement' ? new Date() : null]
         );
       } else {
         // Update existing

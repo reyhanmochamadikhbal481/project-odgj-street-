@@ -1,0 +1,123 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: odgj-secrets
+type: Opaque
+stringData:
+  PGPASSWORD: postgres
+  JWT_SECRET: ganti-dengan-rahasia-panjang-32-karakter
+  MIDTRANS_SERVER_KEY: SB-Mid-server-xxx
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: odgj-config
+data:
+  PGHOST: postgres
+  PGPORT: "5432"
+  PGDATABASE: odgj_street_coffee
+  PGUSER: postgres
+  REDIS_URL: redis://redis:6379
+  PORT: "3000"
+  APP_BASE_URL: http://odgj-app
+  MIDTRANS_IS_PRODUCTION: "false"
+  PAYMENTS_MOCK: "true"
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgres
+spec:
+  serviceName: postgres
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:16-alpine
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_DB
+              valueFrom: { configMapKeyRef: { name: odgj-config, key: PGDATABASE } }
+            - name: POSTGRES_USER
+              valueFrom: { configMapKeyRef: { name: odgj-config, key: PGUSER } }
+            - name: POSTGRES_PASSWORD
+              valueFrom: { secretKeyRef: { name: odgj-secrets, key: PGPASSWORD } }
+          volumeMounts:
+            - name: pgdata
+              mountPath: /var/lib/postgresql/data
+  volumeClaimTemplates:
+    - metadata:
+        name: pgdata
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 5Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+spec:
+  selector:
+    app: postgres
+  ports:
+    - port: 5432
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redis
+  template:
+    metadata:
+      labels:
+        app: redis
+    spec:
+      containers:
+        - name: redis
+          image: redis:7-alpine
+          args: ["redis-server", "--appendonly", "yes"]
+          ports:
+            - containerPort: 6379
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis
+spec:
+  selector:
+    app: redis
+  ports:
+    - port: 6379
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: odgj-ingress
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  rules:
+    - host: outlet.odgj.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: odgj-app
+                port:
+                  number: 80

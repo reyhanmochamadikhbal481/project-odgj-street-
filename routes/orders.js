@@ -172,6 +172,27 @@ router.get('/live-queue', async (req, res) => {
   }
 });
 
+// GET /api/orders/:id/receipt — struk HTML 80mm siap cetak (staff, thermal printer)
+router.get('/:id/receipt', authenticate, requireRole('owner', 'manager', 'barista', 'cashier'), async (req, res) => {
+  try {
+    const o = await pool.query(
+      `SELECT o.*, COALESCE(json_agg(json_build_object('name',oi.name,'qty',oi.qty,'unit_price',oi.unit_price,'subtotal',oi.subtotal,'options',oi.options) ORDER BY oi.id) FILTER (WHERE oi.id IS NOT NULL),'[]') AS items,
+              (SELECT status FROM payments WHERE order_id=o.id ORDER BY created_at DESC LIMIT 1) AS pay_status
+       FROM orders o LEFT JOIN order_items oi ON oi.order_id=o.id WHERE o.id=$1 GROUP BY o.id`, [req.params.id]);
+    if (!o.rowCount) return res.status(404).send('Pesanan tidak ditemukan');
+    const order = o.rows[0];
+    const fmt = (n) => 'Rp' + Number(n).toLocaleString('id-ID');
+    const rows = order.items.map(i => `<tr><td>${i.name} x${i.qty}<br><small>${i.options || ''}</small></td><td align="right">${fmt(i.subtotal)}</td></tr>`).join('');
+    res.setHeader('Content-Type', 'text/html');
+    res.send(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Struk #${order.queue_number}</title><style>body{font-family:monospace;width:80mm;margin:0 auto;font-size:12px}table{width:100%;border-collapse:collapse}h2,h3{text-align:center;margin:4px}p{text-align:center}@media print{.noprint{display:none}}</style></head><body>
+      <h2>ODGJ STREET COFFEE</h2><p>Jl. Trotoar Sejahtera No.7<br>Antrean #${String(order.queue_number).padStart(2, '0')} — ${order.customer_name}<br>${new Date(order.created_at).toLocaleString('id-ID')}</p><hr>
+      <table>${rows}</table><hr>
+      <table><tr><td><b>TOTAL</b></td><td align="right"><b>${fmt(order.total)}</b></td></tr></table>
+      <p>Status: ${order.status} · Bayar: ${order.pay_status || 'cash di gerobak'}</p>
+      <p class="noprint"><button onclick="window.print()">🖨 Cetak</button></p></body></html>`);
+  } catch (err) { res.status(500).send('Gagal cetak struk'); }
+});
+
 // GET /api/orders/status — cek status pesanan per customer (public)
 router.get('/status', async (req, res) => {
   const { customer_name, queue_number } = req.query;

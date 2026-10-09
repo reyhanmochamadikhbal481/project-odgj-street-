@@ -45,9 +45,18 @@ odgj-street-coffee/
 
 ```bash
 npm install          # sudah dijalankan
-npm run setup        # buat database + tabel + seed menu (idempotent)
+npm run setup        # buat database + tabel + seed menu (idempotent, termasuk migrasi fase-2/3)
 npm start            # server → http://localhost:3000
+npm test             # 15 test regresi (auth/menu/order/WS/RBAC)
+npm run verify:phase2 && npm run verify:phase3  # butuh server jalan di terminal lain
 ```
+
+> Catatan: server butuh PostgreSQL lokal. Untuk stack lengkap (postgres+redis) pakai
+> `docker compose up --build` (set `REDIS_URL=redis://redis:6379`). Tanpa Redis,
+> cache otomatis fallback ke memory. Pembayaran QRIS default **MOCK**
+> (`PAYMENTS_MOCK=true` di `.env`) — matikan + isi key asli untuk produksi.
+> Reminder WA default **mock/log** — isi `WA_API_URL/KEY` untuk kirim asli.
+> Backup: `npm run backup` (jadwalkan via cron tiap 5 menit untuk RPO < 5 mnt).
 
 Buka browser di **http://localhost:3000** (pelanggan) atau
 **http://localhost:3000/admin.html** (barista).
@@ -62,12 +71,22 @@ Buka browser di **http://localhost:3000** (pelanggan) atau
 
 | Method  | Endpoint             | Fungsi                                |
 |---------|----------------------|---------------------------------------|
-| GET     | `/api/menu`          | Semua menu (+ kategori, stok, populernya) |
+| GET     | `/api/menu`          | Semua menu (+ kategori, stok, populernya, cache 30 dtk) |
 | GET     | `/api/menu/:id`      | Satu menu                             |
 | POST    | `/api/orders`        | Simpan pesanan baru (dengan levelisasi) |
 | GET     | `/api/orders`        | Daftar 50 pesanan terbaru (`?status=` utk filter) |
 | PATCH   | `/api/orders/:id`    | Ubah status: baru/diproses/siap/selesai |
-| GET     | `/api/health`        | Status koneksi database               |
+| POST    | `/api/payments/create` | Buat QRIS (mock bila `PAYMENTS_MOCK=true`) |
+| POST    | `/api/payments/mock-settle` | Simulasi settlement mock → picu stok + jurnal |
+| POST    | `/api/payments/cash` | Bayar cash (kasir) → settlement + OrderPaid |
+| GET/POST| `/api/inventory/...` | Bahan, BOM, adjust, PO + GRN, opname |
+| GET/POST| `/api/accounting/...` | COA, jurnal, P&L, cashflow, neraca, tutup periode |
+| GET/POST| `/api/shifts/...`   | Buka shift, catat cash, tutup + rekonsiliasi |
+| GET     | `/api/reports/daily` | Laporan harian + HPP/laba (`/daily.csv` + `/daily.xls` utk export) |
+| GET     | `/api/orders/:id/receipt` | Struk HTML 80mm siap cetak thermal |
+| POST    | `/api/reservations` | Booking tamu (publik, `/reserve` halamannya) |
+| GET/POST| `/api/reservations/reminders/...` | Preview/trigger/log reminder H-1/H-2 |
+| GET     | `/api/health`        | Status koneksi database + cache       |
 
 ### Contoh POST /api/orders
 

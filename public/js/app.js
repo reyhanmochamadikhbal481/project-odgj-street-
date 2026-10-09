@@ -204,15 +204,26 @@ async function fetchJSON(url, options) {
   return res.json();
 }
 
-// ===== menu dari database =====
+// ===== menu dari database (dgn cache offline localStorage) =====
 async function loadMenu() {
   try {
     MENU = await fetchJSON(API.menu);
+    try { localStorage.setItem('odgj_menu_cache', JSON.stringify({ at: Date.now(), menu: MENU })); } catch (_) {}
     buildFilters();
     renderMenu();
     renderHeroStats();
     renderCart();
   } catch (err) {
+    // Fallback: pakai cache menu terakhir agar E-Menu tetap buka saat offline
+    try {
+      const cached = JSON.parse(localStorage.getItem('odgj_menu_cache') || 'null');
+      if (cached && Array.isArray(cached.menu) && cached.menu.length) {
+        MENU = cached.menu;
+        buildFilters(); renderMenu(); renderHeroStats(); renderCart();
+        showToast('📦 Mode offline — menampilkan menu terakhir');
+        return;
+      }
+    } catch (_) {}
     $('menuGrid').innerHTML =
       `<div class="empty-result">Gagal memuat menu dari server.<br>${err.message}</div>`;
   }
@@ -254,21 +265,22 @@ function renderMenu() {
       const badges =
         (m.is_bestseller ? '<span class="badge badge-best">BEST SELLER</span>' : '') +
         (!m.is_available ? '<span class="badge badge-habis">STOK HABIS</span>' : '');
+      const badgesHtml = badges ? `<div class="badge-row">${badges}</div>` : '';
       const pop = m.order_count >= 3
         ? `<span class="order-count">🔥 diorder <b>${m.order_count}x</b></span>`
         : '';
       // ═══════════════════════════════════════════════════════════════
-      // 🖼️  TAMPILKAN FOTO: URL diambil dari database (menu_items.photo_url)
-      //     Ubah via Admin Panel atau edit seed.sql
+      // 🖼️  FOTO COMPACT: thumb 84px kiri (CSS .menu-item .photo)
+      //     URL diambil dari database (menu_items.photo_url)
       // ═══════════════════════════════════════════════════════════════
       const photoHtml = m.photo_url
-        ? `<img class="photo" src="${escapeHtml(m.photo_url)}" alt="${escapeHtml(m.name)}" loading="lazy">`
-        : `<div class="photo" style="display:flex;align-items:center;justify-content:center;background:var(--asphalt);"><span style="font-size:48px;">${m.emoji}</span></div>`;
+        ? `<img class="photo" src="${escapeHtml(m.photo_url)}" alt="${escapeHtml(m.name)}" loading="lazy" width="84" height="84" referrerpolicy="no-referrer" onerror="this.onerror=null;this.outerHTML='<div class=&quot;photo&quot; style=&quot;display:flex;align-items:center;justify-content:center;&quot;><span style=&quot;font-size:36px;&quot;>${m.emoji}</span></div>'">`
+        : `<div class="photo" style="display:flex;align-items:center;justify-content:center;" aria-hidden="true"><span style="font-size:36px;">${m.emoji}</span></div>`;
       return `
       <div class="menu-item ${m.is_available ? '' : 'stok-habis'}" style="animation-delay:${Math.min(i * 45, 400)}ms">
         ${photoHtml}
         <div class="info">
-          ${badges}
+          ${badgesHtml}
           <h4>${escapeHtml(m.name)}</h4>
           <p>${escapeHtml(m.description)}</p>
           ${pop}
@@ -784,10 +796,35 @@ function initReveal() {
 }
 
 // ===== PWA =====
+let deferredInstallPrompt = null;
 function registerSW() {
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js').catch(() => { /* abaikan */ });
   }
+  // Install prompt E-Menu (Android/Chrome): tampilkan tombol install di hero
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredInstallPrompt = e;
+    showInstallBanner();
+  });
+}
+
+function showInstallBanner() {
+  if (document.getElementById('pwaInstallBtn')) return;
+  const row = document.querySelector('.cta-row');
+  if (!row) return;
+  const btn = document.createElement('button');
+  btn.id = 'pwaInstallBtn';
+  btn.className = 'btn ghost';
+  btn.textContent = '📲 Install Aplikasi';
+  btn.addEventListener('click', async () => {
+    if (!deferredInstallPrompt) return;
+    deferredInstallPrompt.prompt();
+    await deferredInstallPrompt.userChoice.catch(() => {});
+    deferredInstallPrompt = null;
+    btn.remove();
+  });
+  row.appendChild(btn);
 }
 
 // ===== toast =====

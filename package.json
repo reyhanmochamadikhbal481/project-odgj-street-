@@ -6,7 +6,12 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node --watch server.js",
-    "setup": "node scripts/setup.js"
+    "setup": "node scripts/setup.js",
+    "backup": "node scripts/backup.js",
+    "verify:phase2": "node scripts/verify_phase2.js",
+    "verify:phase3": "node scripts/verify_phase3.js",
+    "verify:phase4": "node scripts/verify_phase4.js",
+    "test": "node test-all.js"
   },
   "keywords": [
     "coffee",
@@ -25,6 +30,8 @@
     "jsonwebtoken": "^9.0.3",
     "node-fetch": "^3.3.2",
     "pg": "^8.13.1",
+    "qrcode": "^1.5.4",
+    "redis": "^4.7.1",
     "socket.io": "^4.8.4",
     "socket.io-client": "^4.8.4"
   }

@@ -2,6 +2,7 @@ const express = require('express');
 const pool = require('../config/db');
 const { authenticate, requireRole } = require('../middleware/auth');
 const eventBus = require('../events/eventBus');
+const { cacheGet, cacheSet, cacheDel } = require('../config/cache');
 
 const router = express.Router();
 
@@ -16,9 +17,11 @@ router.get('/categories', authenticate, requireRole('owner', 'manager'), async (
   }
 });
 
-// GET /api/menu — semua menu + kategori (dipakai frontend)
+// GET /api/menu — semua menu + kategori (dipakai frontend, cache 30 dtk via Redis/memory)
 router.get('/', async (_req, res) => {
   try {
+    const cached = await cacheGet('menu:all');
+    if (cached) return res.json(cached);
     const result = await pool.query(`
       SELECT m.id, m.name, m.description, m.price, m.emoji, m.photo_url,
              m.is_available, m.is_bestseller, m.order_count,
@@ -28,6 +31,7 @@ router.get('/', async (_req, res) => {
       WHERE m.is_available = TRUE OR TRUE
       ORDER BY c.sort_order, m.sort_order, m.id
     `);
+    await cacheSet('menu:all', result.rows, 30);
     res.json(result.rows);
   } catch (err) {
     console.error('[menu] error:', err.message);
@@ -68,6 +72,7 @@ router.post('/', authenticate, requireRole('owner', 'manager'), async (req, res)
       [name, description, category_id, price, emoji || '☕', photo_url || null, sort_order || 0, is_available !== false, is_bestseller === true]
     );
     eventBus.publish('CatalogUpdated', result.rows[0].id, { action: 'created', item: result.rows[0] });
+    await cacheDel('menu*');
     res.status(201).json(result.rows[0]);
   } catch (err) {
     console.error('[menu/create] error:', err.message);
@@ -97,6 +102,7 @@ router.patch('/:id', authenticate, requireRole('owner', 'manager'), async (req, 
     );
     if (result.rowCount === 0) return res.status(404).json({ error: 'Menu tidak ditemukan.' });
     eventBus.publish('CatalogUpdated', result.rows[0].id, { action: 'updated', item: result.rows[0] });
+    await cacheDel('menu*');
     res.json(result.rows[0]);
   } catch (err) {
     console.error('[menu/update] error:', err.message);
@@ -110,6 +116,7 @@ router.delete('/:id', authenticate, requireRole('owner', 'manager'), async (req,
     const result = await pool.query(`DELETE FROM menu_items WHERE id = $1`, [req.params.id]);
     if (result.rowCount === 0) return res.status(404).json({ error: 'Menu tidak ditemukan.' });
     eventBus.publish('CatalogUpdated', req.params.id, { action: 'deleted', id: Number(req.params.id) });
+    await cacheDel('menu*');
     res.json({ message: 'Menu dihapus' });
   } catch (err) {
     console.error('[menu/delete] error:', err.message);

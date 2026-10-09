@@ -66,6 +66,34 @@ function initSocket(httpServer) {
     io.emit('catalog:updates', event.payload);
   });
 
+  eventBus.subscribe('StockLowAlert', (event) => {
+    io.to('barista').emit('stock:low', event.payload);
+  });
+
+  eventBus.subscribe('StockDecremented', (event) => {
+    io.to('barista').emit('stock:decremented', event.payload);
+  });
+
+  eventBus.subscribe('JournalPosted', (event) => {
+    io.to('barista').emit('journal:posted', { id: event.aggregateId });
+  });
+
+  eventBus.subscribe('ReminderSent', (event) => {
+    io.to('barista').emit('reminder:sent', event.payload);
+  });
+
+  eventBus.subscribe('ReservationCreated', (event) => {
+    io.to('barista').emit('reservation:new', event.payload);
+  });
+
+  eventBus.subscribe('ReservationSeated', (event) => {
+    io.to('barista').emit('reservation:seated', event.payload);
+  });
+
+  eventBus.subscribe('ReservationUpdated', (event) => {
+    io.to('barista').emit('reservation:updated', event.payload);
+  });
+
   console.log('[WebSocket] Socket.io Gateway initialized');
   return io;
 }

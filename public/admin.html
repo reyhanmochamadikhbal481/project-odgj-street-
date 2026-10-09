@@ -58,7 +58,11 @@
     <li><button class="a-sidebar-btn" data-view="reservations"><span class="a-sidebar-icon">📅</span> Reservasi</button></li>
     <li><button class="a-sidebar-btn" data-view="payments"><span class="a-sidebar-icon">💳</span> Pembayaran</button></li>
     <li><button class="a-sidebar-btn" data-view="menu" id="menuNav"><span class="a-sidebar-icon">☕</span> Menu</button></li>
+    <li><button class="a-sidebar-btn" data-view="inventory"><span class="a-sidebar-icon">📦</span> Inventori</button></li>
+    <li><button class="a-sidebar-btn" data-view="accounting"><span class="a-sidebar-icon">📒</span> Akuntansi</button></li>
+    <li><button class="a-sidebar-btn" data-view="shifts"><span class="a-sidebar-icon">💵</span> Shift/Kas</button></li>
     <li><button class="a-sidebar-btn" data-view="tables"><span class="a-sidebar-icon">🪑</span> Meja</button></li>
+    <li><button class="a-sidebar-btn" data-view="slots"><span class="a-sidebar-icon">⏰</span> Slot Waktu</button></li>
     <li><button class="a-sidebar-btn" data-view="reports"><span class="a-sidebar-icon">📊</span> Laporan</button></li>
     <li><button class="a-sidebar-btn" data-view="users" id="usersNav"><span class="a-sidebar-icon">👥</span> Pengguna</button></li>
   </ul>
@@ -95,8 +99,12 @@
           <option value="paid">Paid</option>
           <option value="seated">Seated</option>
           <option value="cancelled">Cancelled</option>
+          <option value="no_show">No-show</option>
         </select>
         <input type="date" id="resDateFilter">
+        <input type="search" id="resSearch" placeholder="Cari kode/nama…" style="max-width:150px;">
+        <button class="btn ghost" id="remindBtn">🔔 Reminder H-1/H-2</button>
+        <button class="btn ghost" id="remindLogBtn">📜 Log</button>
       </div>
     </div>
     <div class="a-board" id="resBoard">
@@ -155,15 +163,95 @@
     </div>
   </section>
 
+  <!-- Slots View -->
+  <section id="view-slots" class="a-view">
+    <div class="a-head">
+      <div>
+        <h1>Slot Waktu Reservasi</h1>
+        <p>Kapasitas per sesi · tutup slot saat libur (sesi 2 jam, 15.00–01.00)</p>
+      </div>
+      <div class="a-filters">
+        <select id="slotDowFilter">
+          <option value="0">Minggu</option>
+          <option value="1">Senin</option>
+          <option value="2">Selasa</option>
+          <option value="3">Rabu</option>
+          <option value="4">Kamis</option>
+          <option value="5">Jumat</option>
+          <option value="6">Sabtu</option>
+        </select>
+        <button class="btn solid" id="addSlotBtn">+ Tambah Slot</button>
+      </div>
+    </div>
+    <div class="a-board" id="slotsBoard">
+      <div class="a-empty">Memuat slot…</div>
+    </div>
+  </section>
+
+  <!-- Inventory View (UC-401..405) -->
+  <section id="view-inventory" class="a-view">
+    <div class="a-head">
+      <div>
+        <h1>Inventori Bahan Baku</h1>
+        <p>Stok, BOM resep, PO/GRN, opname — auto-decrement saat OrderPaid</p>
+      </div>
+      <div class="a-filters">
+        <button class="btn solid" id="addIngredientBtn">+ Bahan</button>
+        <button class="btn ghost" id="addPoBtn">+ PO</button>
+      </div>
+    </div>
+    <div class="a-stats" id="invStats"></div>
+    <div class="a-board" id="invBoard"><div class="a-empty">Memuat inventori…</div></div>
+    <h3 style="margin:16px 0 8px">Mutasi Terakhir</h3>
+    <div class="a-board" id="invMoves"></div>
+  </section>
+
+  <!-- Accounting View (UC-501..504) -->
+  <section id="view-accounting" class="a-view">
+    <div class="a-head">
+      <div>
+        <h1>Akuntansi (PSAK)</h1>
+        <p>Auto-jurnal OrderPaid/COGS/deposit + P&L + arus kas + tutup periode</p>
+      </div>
+      <div class="a-filters">
+        <input type="date" id="accFrom"><input type="date" id="accTo">
+        <button class="btn ghost" id="accRefresh">Tampilkan</button>
+        <button class="btn ghost" id="addJournalBtn">+ Jurnal</button>
+        <button class="btn ghost" id="closePeriodBtn">🔒 Tutup Periode</button>
+      </div>
+    </div>
+    <div class="a-stats" id="accStats"></div>
+    <div class="a-board" id="accBoard"><div class="a-empty">Memuat jurnal…</div></div>
+  </section>
+
+  <!-- Shifts View (UC-204) -->
+  <section id="view-shifts" class="a-view">
+    <div class="a-head">
+      <div>
+        <h1>Shift & Cash Drawer</h1>
+        <p>Buka shift, catat cash, tutup + rekonsiliasi</p>
+      </div>
+      <div class="a-filters">
+        <button class="btn solid" id="openShiftBtn">Buka Shift</button>
+        <button class="btn ghost" id="printShiftBtn">🖨 Cetak</button>
+      </div>
+    </div>
+    <div class="a-stats" id="shiftStats"></div>
+    <div class="a-board" id="shiftBoard"><div class="a-empty">Memuat shift…</div></div>
+  </section>
+
   <!-- Reports View -->
   <section id="view-reports" class="a-view">
     <div class="a-head">
       <div>
         <h1>Laporan Harian</h1>
-        <p>Ringkasan penjualan & pembayaran</p>
+        <p>Ringkasan penjualan & pembayaran (+HPP/laba)</p>
       </div>
       <div class="a-filters">
         <input type="date" id="reportDate" value="">
+        <button class="btn ghost" id="exportCsvBtn">⬇ CSV</button>
+        <button class="btn ghost" id="exportXlsBtn">⬇ Excel</button>
+        <button class="btn ghost" id="printReportBtn">🖨 Cetak</button>
       </div>
     </div>
     <div class="a-stats" id="reportStats"></div>
@@ -329,6 +417,135 @@
 </div>
 
 <div class="toast" id="toast"></div>
+
+<!-- Modal PO (UC-404) -->
+<div class="modal" id="poModal" aria-hidden="true">
+  <div class="modal-card modal-card-lg">
+    <button class="close-btn modal-close" id="closePoModal" aria-label="Tutup">✕</button>
+    <h3>Buat Purchase Order</h3>
+    <form id="poForm">
+      <div class="field"><label>Supplier ID (opsional)</label><input type="number" id="poSupplier" min="1"></div>
+      <div class="field"><label>Items (format: ingredient_id:qty:unit_cost per baris)</label><textarea id="poItems" rows="4" placeholder="1:1000:350&#10;2:5000:25" required></textarea></div>
+      <div class="field"><label>Catatan</label><input type="text" id="poNotes" maxlength="255"></div>
+      <div class="modal-actions"><button type="button" class="btn ghost" id="cancelPoBtn">Batal</button><button type="submit" class="btn solid">Buat PO</button></div>
+    </form>
+    <h4 style="margin-top:12px">PO Terakhir (klik Terima = GRN)</h4>
+    <div id="poList"><div class="a-empty">Memuat…</div></div>
+  </div>
+</div>
+
+<!-- Modal BOM (UC-402) -->
+<div class="modal" id="bomModal" aria-hidden="true">
+  <div class="modal-card modal-card-lg">
+    <button class="close-btn modal-close" id="closeBomModal" aria-label="Tutup">✕</button>
+    <h3>Kelola BOM / Resep</h3>
+    <form id="bomForm">
+      <div class="field-row">
+        <div class="field"><label>Menu Item ID</label><input type="number" id="bomMenuId" required min="1"></div>
+        <div class="field"><label>Ingredient ID</label><input type="number" id="bomIngId" required min="1"></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Qty</label><input type="number" id="bomQty" required min="0.001" step="0.001"></div>
+        <div class="field"><label>Satuan</label><input type="text" id="bomUnit" value="pcs" maxlength="16"></div>
+      </div>
+      <div class="modal-actions"><button type="button" class="btn ghost" id="cancelBomBtn">Batal</button><button type="submit" class="btn solid">Simpan Resep</button></div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal Jurnal Manual -->
+<div class="modal" id="journalModal" aria-hidden="true">
+  <div class="modal-card modal-card-lg">
+    <button class="close-btn modal-close" id="closeJournalModal" aria-label="Tutup">✕</button>
+    <h3>Jurnal Manual (seimbang)</h3>
+    <form id="journalForm">
+      <div class="field"><label>Memo</label><input type="text" id="jMemo" required maxlength="255"></div>
+      <div class="field"><label>Tanggal</label><input type="date" id="jDate"></div>
+      <div class="field"><label>Lines (format: account_code:debit:credit per baris, min 2)</label><textarea id="jLines" rows="4" placeholder="1-1020:50000:0&#10;4-1000:0:50000" required></textarea></div>
+      <div class="modal-actions"><button type="button" class="btn ghost" id="cancelJournalBtn">Batal</button><button type="submit" class="btn solid">Posting</button></div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal Detail Reservasi -->
+<div class="modal" id="resModal" aria-hidden="true">
+  <div class="modal-card modal-card-lg" style="text-align:left;">
+    <button class="close-btn modal-close" id="closeResModal" aria-label="Tutup">✕</button>
+    <h3 id="resModalTitle">Detail Reservasi</h3>
+    <div id="resModalBody"><div class="a-empty">Memuat…</div></div>
+    <div class="field" id="resAssignRow" style="margin-top:10px;">
+      <label>Assign / pindah meja</label>
+      <div style="display:flex; gap:8px;">
+        <select id="resTableSelect" style="flex:1;"><option value="">— pilih meja —</option></select>
+        <button type="button" class="btn solid" id="resAssignBtn">Assign</button>
+      </div>
+    </div>
+    <div class="modal-actions" id="resModalActions" style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+      <button type="button" class="btn solid" id="resConfirmBtn">✔ Konfirmasi</button>
+      <button type="button" class="btn ghost" id="resCheckinBtn">✓ Check-in</button>
+      <button type="button" class="btn ghost" id="resNoshowBtn">No-show</button>
+      <button type="button" class="btn ghost" id="resCancelBtn" style="color:#c00;">Batalkan</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Reminder -->
+<div class="modal" id="remindModal" aria-hidden="true">
+  <div class="modal-card modal-card-lg" style="text-align:left;">
+    <button class="close-btn modal-close" id="closeRemindModal" aria-label="Tutup">✕</button>
+    <h3>Reminder WhatsApp H-1 / H-2</h3>
+    <div class="modal-actions" style="flex-direction:row;">
+      <button type="button" class="btn solid" id="remindTriggerBtn">▶ Jalankan sekarang</button>
+      <button type="button" class="btn ghost" id="remindRefreshBtn">↻ Muat ulang</button>
+    </div>
+    <h4 style="margin-top:12px">Jatuh tempo</h4>
+    <div id="remindPreview"><div class="a-empty">Memuat…</div></div>
+    <h4 style="margin-top:12px">Riwayat terkirim</h4>
+    <div id="remindLogs"><div class="a-empty">Memuat…</div></div>
+  </div>
+</div>
+
+<!-- Modal Slot Waktu -->
+<div class="modal" id="slotModal" aria-hidden="true">
+  <div class="modal-card modal-card-lg">
+    <button class="close-btn modal-close" id="closeSlotModal" aria-label="Tutup">✕</button>
+    <h3 id="slotModalTitle">Tambah Slot</h3>
+    <form id="slotForm">
+      <input type="hidden" id="slotId">
+      <div class="field-row">
+        <div class="field">
+          <label>Hari</label>
+          <select id="slotDow" required>
+            <option value="0">Minggu</option>
+            <option value="1">Senin</option>
+            <option value="2">Selasa</option>
+            <option value="3">Rabu</option>
+            <option value="4">Kamis</option>
+            <option value="5">Jumat</option>
+            <option value="6">Sabtu</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Jam mulai</label>
+          <input type="time" id="slotStart" value="15:00" required>
+        </div>
+        <div class="field">
+          <label>Kapasitas</label>
+          <input type="number" id="slotCap" value="20" min="1" required>
+        </div>
+      </div>
+      <div class="field">
+        <label class="checkbox-field">
+          <input type="checkbox" id="slotClosed"> Ditutup (libur)
+        </label>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn ghost" id="cancelSlotBtn">Batal</button>
+        <button type="submit" class="btn solid">Simpan</button>
+      </div>
+    </form>
+  </div>
+</div>
 
 <script src="/socket.io/socket.io.js"></script>
 <script src="js/admin.js"></script>

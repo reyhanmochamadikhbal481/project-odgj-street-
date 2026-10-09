@@ -11,3 +11,7 @@ npm-debug.log*
 # OS
 .DS_Store
 Thumbs.db
+# File sementara / hasil test
+*.err
+test-qr.png
+server-test.log

@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reservasi Meja — ODGJ Street Coffee</title>
+<meta name="description" content="Booking meja ODGJ Street Coffee. Pilih tanggal, jam, jumlah orang.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%23E8452C%22/><text x=%2250%22 y=%2268%22 font-size=%2260%22 text-anchor=%22middle%22 fill=%22%23F2E9D8%22 font-family=%22sans-serif%22>O</text></svg>">
+<meta name="theme-color" content="#15130F">
+<link rel="stylesheet" href="css/style.css">
+<style>
+.slot-row{ display:flex; flex-wrap:wrap; gap:8px; margin:6px 0 2px; }
+.slot-chip{ border:1px solid var(--line, #2b271f); background:#1d1a15; color:var(--paper, #F2E9D8);
+  border-radius:10px; padding:8px 10px; font-size:12px; font-family:var(--font-mono, monospace);
+  cursor:pointer; text-align:center; min-width:86px; }
+.slot-chip small{ display:block; font-size:10px; opacity:.75; }
+.slot-chip.sel{ border-color:var(--spray, #E8452C); background:#2a2118; box-shadow:0 0 0 1px var(--spray, #E8452C) inset; }
+.slot-chip:disabled{ opacity:.38; cursor:not-allowed; }
+.f-err{ font-size:11px; color:#ff8f8f; font-family:var(--font-mono, monospace); min-height:14px; }
+.field input.bad{ border-color:#c00 !important; }
+.pre-list{ display:grid; gap:8px; max-height:260px; overflow:auto; border:1px solid var(--line, #2b271f);
+  border-radius:12px; padding:10px; background:#171410; }
+.pre-row{ display:flex; align-items:center; gap:8px; font-size:13px; }
+.pre-row .nm{ flex:1; }
+.pre-row .nm small{ display:block; opacity:.7; font-family:var(--font-mono, monospace); font-size:11px; }
+.qty{ display:flex; align-items:center; gap:6px; }
+.qty button{ width:26px; height:26px; border-radius:8px; border:1px solid var(--line, #2b271f);
+  background:#241f18; color:var(--paper, #F2E9D8); cursor:pointer; font-size:15px; line-height:1; }
+.qty b{ min-width:20px; text-align:center; }
+.sum-card{ border:1px dashed var(--line, #2b271f); border-radius:12px; padding:10px 12px;
+  font-size:12px; font-family:var(--font-mono, monospace); display:grid; gap:4px; }
+.sum-card .hl{ color:var(--spray, #E8452C); font-weight:700; }
+.qr-img{ width:200px; height:200px; border-radius:12px; margin:10px auto 0; display:block; background:#F2E9D8; }
+</style>
+</head>
+<body>
+
+<div class="ticker" aria-hidden="true">
+  <div class="ticker-track" id="tickerTrack">
+    <span>RESERVASI MEJA — TANPA ANTRI</span>
+    <span>PARTY ≥ 6 ORANG WAJIB DP VIA QRIS</span>
+    <span>SCAN QR SAAT TIBA UNTUK CHECK-IN</span>
+  </div>
+</div>
+
+<header class="nav" id="nav">
+  <div class="nav-row wrap">
+    <a href="/" class="brandmark"><span class="dot"></span><span class="brand-txt">ODGJ <em>STREET</em> COFFEE</span></a>
+    <nav class="links">
+      <a href="/#menu">Menu</a>
+      <a href="/reserve">Reservasi</a>
+      <a href="/#lokasi">Lokasi</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+<section class="section section-menu">
+  <div class="wrap">
+    <div class="sec-head">
+      <div><span class="sec-kicker">/ RESERVASI</span><h2>Booking Meja</h2></div>
+      <span class="idx">MAKS 2 JAM / SESI</span>
+    </div>
+
+    <form id="resForm" style="max-width:520px; display:grid; gap:10px;" novalidate>
+      <label class="field"><span>Nama</span>
+        <input type="text" id="guestName" maxlength="100" placeholder="cth: Rama" autocomplete="name">
+        <span class="f-err" id="errName"></span>
+      </label>
+      <label class="field"><span>No. HP / WhatsApp</span>
+        <input type="tel" id="guestPhone" maxlength="32" placeholder="cth: 0812..." autocomplete="tel">
+        <span class="f-err" id="errPhone"></span>
+      </label>
+      <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px;">
+        <label class="field"><span>Tanggal</span><input type="date" id="resDate"></label>
+        <label class="field"><span>Jam</span><input type="time" id="resTime" step="1800"></label>
+        <label class="field"><span>Orang</span><input type="number" id="partySize" min="1" max="50" value="2"></label>
+      </div>
+      <div class="f-err" id="errSlot"></div>
+
+      <div>
+        <span class="sec-kicker" style="font-size:10px;">/ PILIH SLOT (KETERSEDIAAN REAL-TIME)</span>
+        <div class="slot-row" id="slotRow"><span class="f-err">Pilih tanggal dulu…</span></div>
+      </div>
+
+      <div id="tableWrap" style="display:none;">
+        <span class="sec-kicker" style="font-size:10px;">/ PILIH MEJA (OPSIONAL)</span>
+        <div class="slot-row" id="tableRow"></div>
+      </div>
+
+      <label class="field"><span>Catatan / preferensi meja (opsional)</span>
+        <input type="text" id="resNotes" maxlength="500" placeholder="Dekat colokan, bawa anak...">
+      </label>
+
+      <details id="preWrap">
+        <summary style="cursor:pointer; font-size:12px; font-family:var(--font-mono, monospace);">+ PRE-ORDER MENU (OPSIONAL — disarankan utk party ≥ 6)</summary>
+        <div class="pre-list" id="preList" style="margin-top:8px;"><span class="f-err">Memuat menu…</span></div>
+      </details>
+
+      <div class="sum-card" id="sumCard">
+        <div>Est. total: <span id="sumEst">Rp0</span></div>
+        <div>DP: <span id="sumDp">Tanpa DP</span></div>
+        <div id="sumTable">Meja: otomatis oleh sistem</div>
+      </div>
+
+      <button class="btn solid" type="submit" id="resSubmit" style="justify-content:center;">Booking Sekarang</button>
+    </form>
+
+    <div id="resResult" style="max-width:520px; margin-top:20px; display:none;">
+      <div class="modal-card" style="position:static; transform:none;">
+        <span class="modal-badge">✔</span>
+        <h3>BOOKING DITERIMA!</h3>
+        <div class="queue-number" id="bookingCode">#—</div>
+        <p class="modal-note" id="bookingInfo"></p>
+        <p class="modal-tiny" id="dpInfo"></p>
+        <img class="qr-img" id="qrImg" alt="QR check-in" style="display:none;">
+        <div class="modal-actions" id="bookingActions" style="display:grid; gap:8px;">
+          <button class="btn solid" id="payDpBtn" style="display:none; justify-content:center;">Bayar DP (QRIS/Mock)</button>
+          <a class="btn ghost" id="checkinLink" href="#" style="justify-content:center;">Simulasi Check-in saat tiba →</a>
+          <a class="btn ghost" id="waBookBtn" href="#" target="_blank" rel="noopener" style="justify-content:center;">Kirim ke WhatsApp</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap"><div class="foot-bottom">
+    <span>© <span id="year"></span> ODGJ STREET COFFEE</span>
+    <span>RESERVASI · QR CHECK-IN</span>
+  </div></div>
+</footer>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function() {
+  const $ = (id) => document.getElementById(id);
+  const fmtRp = (n) => 'Rp' + Number(n).toLocaleString('id-ID');
+  let toastTimer;
+  function toast(m) { const t = $('toast'); t.textContent = m; t.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 2400); }
+
+  const state = { avail: null, selTable: null, menu: [] };
+  const cart = new Map(); // menu_item_id -> {qty, price, name}
+
+  const todayStr = () => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); };
+  const normPhone = (v) => String(v||'').replace(/[\s\-\.]/g, '');
+  const validName = (v) => String(v||'').trim().length >= 2;
+  const validPhone = (v) => /^(\+?62|0)8[1-9][0-9]{6,13}$/.test(normPhone(v));
+
+  function paintField(input, errEl, ok, msg) {
+    input.classList.toggle('bad', !ok);
+    if (errEl) errEl.textContent = ok ? '' : msg;
+    return ok;
+  }
+  function liveValidate() {
+    const okName = paintField($('guestName'), $('errName'), validName($('guestName').value), 'Nama minimal 2 karakter.');
+    const okPhone = paintField($('guestPhone'), $('errPhone'), $('guestPhone').value.trim() === '' || validPhone($('guestPhone').value), 'No. HP tidak valid (cth: 0812…).');
+    const p = Number($('partySize').value);
+    $('partySize').classList.toggle('bad', !(p >= 1 && p <= 50));
+    return okName && okPhone && p >= 1 && p <= 50 && !!$('resDate').value && !!$('resTime').value;
+  }
+
+  async function loadAvail() {
+    const row = $('slotRow'); const date = $('resDate').value;
+    state.avail = null; state.selTable = null;
+    $('tableWrap').style.display = 'none';
+    $('errSlot').textContent = '';
+    if (!date) { row.innerHTML = '<span class="f-err">Pilih tanggal dulu…</span>'; return; }
+    row.innerHTML = '<span class="f-err">Memuat slot…</span>';
+    try {
+      const res = await fetch('/api/timeslots/availability?date=' + encodeURIComponent(date));
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Gagal memuat slot');
+      state.avail = data;
+      if (!data.slots.length) { row.innerHTML = '<span class="f-err">Tidak ada slot hari itu.</span>'; return; }
+      row.innerHTML = '';
+      const nowMin = new Date().getHours()*60 + new Date().getMinutes();
+      data.slots.forEach(s => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'slot-chip' + (s.start === ($('resTime').value||'').slice(0,5) ? ' sel' : '');
+        const label = s.status === 'open' ? `sisa ${s.remaining}` : ({full:'PENUH', past:'LEWAT', closed:'TUTUP'}[s.status] || s.status);
+        b.innerHTML = `${s.start}–${s.end}<small>${label}</small>`;
+        b.disabled = s.status !== 'open';
+        b.onclick = () => { $('resTime').value = s.start; paintSlots(); paintTables(); updateSummary(); $('errSlot').textContent=''; };
+        row.appendChild(b);
+      });
+      paintTables(); updateSummary();
+    } catch (err) { row.innerHTML = '<span class="f-err">⚠️ ' + err.message + '</span>'; }
+  }
+
+  function paintSlots() {
+    const t = ($('resTime').value || '').slice(0,5);
+    $('slotRow').querySelectorAll('.slot-chip').forEach(c => c.classList.toggle('sel', c.textContent.startsWith(t)));
+  }
+
+  function paintTables() {
+    const wrap = $('tableWrap'); const rowEl = $('tableRow');
+    const t = ($('resTime').value || '').slice(0,5);
+    const slot = state.avail?.slots.find(s => s.start === t);
+    if (!slot || !slot.free_tables.length) { wrap.style.display = 'none'; state.selTable = null; updateSummary(); return; }
+    wrap.style.display = 'block'; rowEl.innerHTML = '';
+    slot.free_tables.forEach(tb => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'slot-chip' + (state.selTable === tb.id ? ' sel' : '');
+      b.innerHTML = `${tb.name}<small>kap ${tb.capacity}</small>`;
+      b.onclick = () => { state.selTable = (state.selTable === tb.id ? null : tb.id); paintTables(); };
+      rowEl.appendChild(b);
+    });
+    updateSummary();
+  }
+
+  async function loadMenu() {
+    const list = $('preList');
+    try {
+      const res = await fetch('/api/menu');
+      const data = await res.json();
+      if (!res.ok) throw new Error('gagal');
+      state.menu = (Array.isArray(data) ? data : []).filter(m => m.is_available);
+      if (!state.menu.length) { list.innerHTML = '<span class="f-err">Menu kosong.</span>'; return; }
+      list.innerHTML = '';
+      state.menu.forEach(m => {
+        const div = document.createElement('div');
+        div.className = 'pre-row';
+        div.innerHTML = `<span style="font-size:20px;">${m.emoji || '☕'}</span>
+          <span class="nm">${m.name}<small>${fmtRp(m.price)}</small></span>
+          <span class="qty"><button type="button" data-a="-">−</button><b data-q>0</b><button type="button" data-a="+">+</button></span>`;
+        const qEl = div.querySelector('[data-q]');
+        div.querySelectorAll('button').forEach(btn => btn.onclick = () => {
+          const cur = cart.get(m.id)?.qty || 0;
+          const next = Math.max(0, Math.min(50, cur + (btn.dataset.a === '+' ? 1 : -1)));
+          if (next === 0) cart.delete(m.id); else cart.set(m.id, { qty: next, price: m.price, name: m.name });
+          qEl.textContent = next;
+          updateSummary();
+        });
+        list.appendChild(div);
+      });
+    } catch (_) { list.innerHTML = '<span class="f-err">Gagal memuat menu.</span>'; }
+  }
+
+  function preTotal() { let t = 0; cart.forEach(c => t += c.qty * c.price); return t; }
+
+  function updateSummary() {
+    const party = Math.max(1, Math.min(50, Number($('partySize').value) || 0));
+    const pt = preTotal();
+    const est = pt > 0 ? pt : party * 20000;
+    const needDP = party >= 6 || pt > 500000;
+    const dp = needDP ? Math.min(est, 20000 * party) : 0;
+    $('sumEst').textContent = fmtRp(est) + (pt > 0 ? ` (${[...cart.values()].reduce((a,c)=>a+c.qty,0)} item)` : ' (estimasi)');
+    $('sumDp').innerHTML = needDP ? `<span class="hl">Wajib DP ${fmtRp(dp)}</span>` : 'Tanpa DP';
+    const tb = state.avail && state.selTable
+      ? (state.avail.slots.flatMap(s => s.free_tables).find(x => x.id === state.selTable))
+      : null;
+    $('sumTable').textContent = 'Meja: ' + (tb ? `${tb.name} (kap ${tb.capacity})` : 'otomatis oleh sistem');
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    $('year').textContent = new Date().getFullYear();
+    const track = $('tickerTrack');
+    track.innerHTML = track.innerHTML + ' ' + track.innerHTML.trim();
+    const d = $('resDate');
+    const t = todayStr();
+    d.min = t;
+    d.max = new Date(Date.now() + 60*864e5).toISOString().slice(0,10);
+    if (!d.value) d.value = t;
+    ['guestName','guestPhone','partySize'].forEach(id => $(id).addEventListener('input', () => { liveValidate(); updateSummary(); }));
+    d.addEventListener('change', loadAvail);
+    $('resTime').addEventListener('change', () => { paintSlots(); paintTables(); updateSummary(); });
+    loadAvail(); loadMenu();
+  });
+
+  $('resForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!liveValidate()) { toast('⚠️ Periksa nama, HP, tanggal & jam.'); return; }
+    const btn = $('resSubmit');
+    btn.disabled = true; btn.textContent = 'Memproses…';
+    try {
+      const pre_order = [...cart.entries()].map(([menu_item_id, c]) => ({ menu_item_id, qty: c.qty }));
+      const payload = {
+        date: $('resDate').value,
+        time: $('resTime').value,
+        partySize: Number($('partySize').value),
+        guest_name: $('guestName').value.trim(),
+        phone: normPhone($('guestPhone').value.trim()),
+        notes: $('resNotes').value.trim(),
+        table_id: state.selTable,
+        pre_order,
+      };
+      const res = await fetch('/api/reservations', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Gagal booking');
+      showResult(data, payload);
+    } catch (err) {
+      if (/Slot|penuh|tutup|lewat|operasional/i.test(err.message)) $('errSlot').textContent = '⚠️ ' + err.message;
+      toast('⚠️ ' + err.message);
+      loadAvail();
+    } finally {
+      btn.disabled = false; btn.textContent = 'Booking Sekarang';
+    }
+  });
+
+  function showResult(data, payload) {
+    const r = data.reservation;
+    $('resResult').style.display = 'block';
+    $('bookingCode').textContent = r.booking_code;
+    const dstr = String(r.reservation_date).slice(0,10);
+    $('bookingInfo').textContent = `${payload.guest_name} · ${r.party_size} orang · ${dstr} ${String(r.reservation_time).slice(0,5)}${data.table ? ' · Meja ' + data.table.name : ''} · Est. ${fmtRp(r.estimated_total)}`;
+    const needDP = data.depositRequired;
+    $('dpInfo').textContent = needDP
+      ? `Wajib DP ${fmtRp(r.deposit_amount)} via QRIS agar terkonfirmasi otomatis.`
+      : 'Tanpa DP — tunjukkan kode booking / QR saat tiba.';
+    const qr = $('qrImg');
+    qr.src = '/api/reservations/' + r.id + '/qr';
+    qr.style.display = 'block';
+    const payBtn = $('payDpBtn');
+    if (needDP && data.depositPayment) {
+      payBtn.style.display = 'block';
+      payBtn.onclick = async () => {
+        payBtn.disabled = true; payBtn.textContent = 'Memproses DP…';
+        try {
+          const c = await (await fetch('/api/payments/deposit/create', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ reservation_id: r.id }) })).json();
+          if (c.mock || c.token?.startsWith('MOCK')) {
+            toast('Mock QRIS — mensimulasikan settlement…');
+            await fetch('/api/payments/webhook', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ transaction_id: c.token, order_id: `ODGJ-RES-${r.id}-${Date.now()}`, transaction_status: 'settlement', fraud_status: 'accept', gross_amount: r.deposit_amount }) });
+            $('dpInfo').textContent = '✅ DP lunas (mock) — reservasi TERKONFIRMASI.';
+            payBtn.style.display = 'none';
+          } else if (c.qr_string || c.token) {
+            toast('Scan QR di dashboard / aplikasi Midtrans untuk bayar.');
+          } else {
+            throw new Error(c.error || 'Gagal buat transaksi DP');
+          }
+        } catch (err) { toast('⚠️ ' + err.message); }
+        finally { payBtn.disabled = false; payBtn.textContent = 'Bayar DP (QRIS/Mock)'; }
+      };
+    } else payBtn.style.display = 'none';
+    $('checkinLink').href = '/checkin?id=' + r.id;
+    const msg = `Halo ODGJ! Booking saya *${r.booking_code}* — ${payload.guest_name}, ${r.party_size} orang, ${dstr} ${String(r.reservation_time).slice(0,5)}`;
+    $('waBookBtn').href = 'https://wa.me/6285770130803?text=' + encodeURIComponent(msg);
+    $('resResult').scrollIntoView({ behavior: 'smooth' });
+  }
+})();
+</script>
+</body>
+</html>

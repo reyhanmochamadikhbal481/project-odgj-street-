@@ -246,22 +246,23 @@ Referensi: Blueprint v2.0 (Bab 4, 5, 14, 15, 16, 17)
 
 | Use Case | Blueprint Ref | Implementasi Status |
 |----------|---------------|---------------------|
-| UC-101..105 | Bab 4 (Modul 1) | ✅ Done |
-| UC-201..204 | Bab 5 (Modul 2) | ✅ Done (204 partial) |
-| UC-301..303 | Bab 14 (Modul 3) | ⏸️ Schema + routes ready |
-| UC-401..405 | Bab 15 (Modul 4) | ⏸️ Schema ready |
-| UC-501..504 | Bab 16 (Modul 5) | ⏸️ Schema ready |
-| Cross-Module | Bab 17 | ✅ Event Bus + WS running |
+| UC-101..105 | Bab 4 (Modul 1) | ✅ Done (PWA v3: install prompt, offline menu cache, offline.html, BG sync) |
+| UC-201..204 | Bab 5 (Modul 2) | ✅ Done (shift/cash drawer: open/cash/close + rekonsiliasi + struk 80mm) |
+| UC-301..303 | Bab 14 (Modul 3) | ✅ Done fase-3/4 (halaman /reserve publik, guest booking, auto-assign meja, DP mock/Snap, webhook auto-confirm, check-in seated, reminder H-1/H-2 + log) |
+| UC-401..405 | Bab 15 (Modul 4) | ✅ Done fase-2/3 (CRUD bahan, BOM editor, auto-decrement OrderPaid, PO+GRN, opname+approval, low-stock alert + auto-disable) |
+| UC-501..504 | Bab 16 (Modul 5) | ✅ Done fase-2/3/4 (COA PSAK, auto-jurnal revenue/HPP/deposit/purchase/waste, P&L, cashflow, neraca, period lock, jurnal manual, export CSV+XLS) |
+| Cross-Module | Bab 17 | ✅ Event Bus + WS running (OrderPaid→stok+jurnal, StockLowAlert, JournalPosted, ReservationCreated) |
 
 ---
 
 ## **Next Implementation Priority**
 
-1. **UC-301 (Booking + QRIS Payment)** — Revenue-generating, routes sudah ada
-2. **UC-403 (Auto Decrement Stok)** — Prasyarat UC-502 (COGS), butuh BOM table
-3. **UC-502 (Auto Jurnal)** — Butuh UC-403 jalan dulu
-4. **UC-204 (Shift/Cash Drawer)** — Operational daily need
-5. **PWA Background Sync** — Offline order submission
+1. ~~**UC-301 (Booking + QRIS Payment)**~~ ✅ Selesai fase-3 (guest booking + mock settle + cash)
+2. ~~**UC-403 (Auto Decrement Stok)**~~ ✅ Selesai (terbukti via verify_phase3)
+3. ~~**UC-502 (Auto Jurnal)**~~ ✅ Selesai (revenue + HPP otomatis)
+4. ~~**UC-204 (Shift/Cash Drawer)**~~ ✅ Selesai (+rekonsiliasi + cetak)
+5. ~~**PWA Background Sync**~~ ✅ Selesai (v3 + offline menu cache)
+6. **Sisa menuju produksi**: kredensial Midtrans asli (matikan PAYMENTS_MOCK, endpoint Snap sudah benar), isi `WA_API_URL/KEY` untuk reminder asli (saat ini mock/log), export PDF (CSV+XLS ada, cetak via browser), secret management produksi, WAL backup terjadwal (`npm run backup` via cron, contoh: `*/5 * * * * cd /opt/odgj && npm run backup`).
 
 ---
 

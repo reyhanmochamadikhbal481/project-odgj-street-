@@ -11,6 +11,15 @@
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Space+Mono:wght@400;700&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
 <meta name="theme-color" content="#15130F">
 <link rel="stylesheet" href="css/style.css">
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js" defer></script>
+<style>
+.scan-box{ max-width:400px; margin:1.2rem auto 0; display:grid; gap:10px; }
+.scan-box video{ width:100%; border-radius:12px; background:#000; display:none; }
+.scan-box video.on{ display:block; }
+.code-row{ display:flex; gap:8px; }
+.code-row input{ flex:1; text-transform:uppercase; text-align:center; letter-spacing:2px; font-family:var(--font-mono, monospace); }
+.wait-note{ font-size:12px; font-family:var(--font-mono, monospace); opacity:.8; margin-top:8px; }
+</style>
 </head>
 <body>
 
@@ -51,7 +60,8 @@
             <div class="cup"></div>
             <div class="saucer"></div>
           </div>
-          <p>Memverifikasi reservasi...</p>
+          <p id="loadingText">Memverifikasi reservasi...</p>
+          <p class="wait-note" id="waitNote" style="display:none;">Menunggu konfirmasi pembayaran… halaman ini cek otomatis tiap 5 detik.</p>
         </div>
 
         <div class="checkin-state" id="stateSuccess" style="display: none;">
@@ -68,6 +78,20 @@
           <h3>CHECK-IN GAGAL</h3>
           <p class="modal-sub" id="errorMessage">Terjadi kesalahan</p>
           <a href="/" class="btn ghost" style="width: 100%; justify-content: center; margin-top: 1rem;">Kembali ke Beranda</a>
+        </div>
+
+        <div class="checkin-state" id="stateManual" style="display: none;">
+          <p class="modal-sub">Tidak ada QR? Masukkan kode booking atau scan:</p>
+          <div class="scan-box">
+            <div class="code-row">
+              <input id="codeInput" maxlength="20" placeholder="KODE123" autocomplete="off">
+              <button class="btn solid" id="codeBtn" type="button">Cek</button>
+            </div>
+            <button class="btn ghost" id="scanBtn" type="button" style="justify-content:center;">📷 Scan QR dengan kamera</button>
+            <button class="btn ghost" id="stopScanBtn" type="button" style="justify-content:center; display:none;">Berhenti scan</button>
+            <video id="scanVideo" playsinline muted></video>
+            <canvas id="scanCanvas" style="display:none;"></canvas>
+          </div>
         </div>
       </div>
     </div>
@@ -87,69 +111,221 @@
 <script>
 (function() {
   const $ = (id) => document.getElementById(id);
-  const fmtRp = (n) => 'Rp' + Number(n).toLocaleString('id-ID');
-  const fmtTime = (iso) => new Date(iso).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
-  const fmtDate = (iso) => new Date(iso).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long' });
+  let toastTimer;
+  function toast(m) { const t = $('toast'); t.textContent = m; t.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 2400); }
 
-  function getReservationId() {
-    const params = new URLSearchParams(window.location.search);
-    return params.get('id');
-  }
+  let pollTimer = null;
+  let pollCount = 0;
+  const POLL_MAX = 24; // ±2 menit
 
-  async function checkIn() {
-    const id = getReservationId();
-    if (!id) {
-      showError('ID reservasi tidak ditemukan di URL');
-      return;
-    }
+  function params() { return new URLSearchParams(window.location.search); }
 
+  function extractFromQrText(text) {
     try {
-      const res = await fetch('/api/reservations/' + id + '/checkin', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
-      });
+      const u = new URL(text, window.location.origin);
+      const id = u.searchParams.get('id');
+      const code = u.searchParams.get('code');
+      if (id) return { id };
+      if (code) return { code };
+    } catch (_) {}
+    const m = String(text || '').trim().toUpperCase().match(/([A-Z0-9]{6,20})/);
+    if (m) return { code: m[1] };
+    return null;
+  }
+
+  async function lookupId({ id, code }) {
+    if (id && /^\d+$/.test(String(id))) return Number(id);
+    if (code) {
+      const res = await fetch('/api/reservations/lookup?code=' + encodeURIComponent(String(code).trim().toUpperCase()));
       const data = await res.json();
-      
-      if (!res.ok) {
-        throw new Error(data.error || 'Check-in gagal');
-      }
-
-      showSuccess(data);
-    } catch (err) {
-      showError(err.message);
+      if (!res.ok) throw new Error(data.error || 'Kode booking tidak ditemukan');
+      return data.id;
     }
+    throw new Error('ID / kode reservasi tidak valid');
   }
 
-  function showLoading() {
-    $('stateLoading').style.display = 'block';
-    $('stateSuccess').style.display = 'none';
-    $('stateError').style.display = 'none';
+  async function doCheckin(id) {
+    const res = await fetch('/api/reservations/' + id + '/checkin', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      const err = new Error(data.error || 'Check-in gagal');
+      err.code = data.code;
+      err.status = res.status;
+      throw err;
+    }
+    return data;
   }
+
+  function startWaitPoll(id) {
+    stopPoll();
+    pollCount = 0;
+    $('waitNote').style.display = 'block';
+    pollTimer = setInterval(async () => {
+      pollCount++;
+      if (pollCount >= POLL_MAX) {
+        stopPoll();
+        $('waitNote').style.display = 'none';
+        showError('Waktu tunggu habis. Lunasi DP dulu, lalu scan ulang QR Anda.');
+        showManual();
+        return;
+      }
+      try {
+        const data = await doCheckin(id);
+        stopPoll();
+        showSuccess(data);
+      } catch (err) {
+        if (err.code !== 'need_confirmation' && err.code !== 'outside_window') {
+          stopPoll();
+          showError(err.message);
+        }
+        // outside_window / need_confirmation → tetap tunggu
+      }
+    }, 5000);
+  }
+  function stopPoll() { if (pollTimer) { clearInterval(pollTimer); pollTimer = null; } }
 
   function showSuccess(data) {
+    stopPoll(); stopScan();
     $('stateLoading').style.display = 'none';
     $('stateError').style.display = 'none';
+    $('stateManual').style.display = 'none';
     $('stateSuccess').style.display = 'block';
-    $('tableNumber').textContent = 'Meja #' + data.table_id;
-    $('bookingInfo').textContent = 'Booking: ' + data.booking_code;
+    $('tableNumber').textContent = 'Meja #' + (data.table_name || data.table_id || '—');
+    const when = `${data.reservation_date || ''} ${(data.reservation_time || '').slice(0,5)}`;
+    $('bookingInfo').textContent = `${data.guest_name || ''} · ${data.party_size || ''} orang · ${when} · ${data.booking_code || ''}`;
   }
 
   function showError(msg) {
+    stopPoll();
     $('stateLoading').style.display = 'none';
     $('stateSuccess').style.display = 'none';
     $('stateError').style.display = 'block';
     $('errorMessage').textContent = msg;
   }
 
-  function duplicateTicker() {
-    const track = $('tickerTrack');
-    track.innerHTML = track.innerHTML + ' ' + track.innerHTML.trim();
+  function showManual() {
+    $('stateManual').style.display = 'block';
+  }
+
+  function showLoading(text) {
+    $('stateLoading').style.display = 'block';
+    $('stateSuccess').style.display = 'none';
+    $('stateError').style.display = 'none';
+    if (text) $('loadingText').textContent = text;
+  }
+
+  async function boot() {
+    const p = params();
+    const idP = p.get('id');
+    const codeP = p.get('code');
+    if (!idP && !codeP) {
+      $('stateLoading').style.display = 'none';
+      showManual();
+      return;
+    }
+    showLoading('Memverifikasi reservasi...');
+    try {
+      const id = await lookupId({ id: idP, code: codeP });
+      const data = await doCheckin(id);
+      showSuccess(data);
+    } catch (err) {
+      if (err.code === 'need_confirmation') {
+        // reservasi menunggu DP → auto-poll sampai confirmed
+        try {
+          const id = await lookupId({ id: idP, code: codeP });
+          toast('Menunggu pembayaran DP… cek otomatis tiap 5 detik.');
+          startWaitPoll(id);
+        } catch (e2) { showError(err.message); showManual(); }
+      } else if (err.code === 'outside_window') {
+        showError(err.message + ' (H-1 jam s/d H+30 menit).');
+        showManual();
+      } else {
+        showError(err.message);
+        showManual();
+      }
+    }
+  }
+
+  // ===== scan kamera (jsQR via CDN, fallback manual bila gagal) =====
+  let scanStream = null;
+  let scanRaf = null;
+  async function startScan() {
+    if (typeof jsQR === 'undefined') { toast('⚠️ Pustaka scan gagal dimuat (butuh internet). Pakai kode manual.'); return; }
+    const video = $('scanVideo');
+    try {
+      scanStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+    } catch (_) {
+      try { scanStream = await navigator.mediaDevices.getUserMedia({ video: true }); }
+      catch (e) { toast('⚠️ Kamera tidak bisa diakses: ' + e.message); return; }
+    }
+    video.srcObject = scanStream;
+    await video.play();
+    video.classList.add('on');
+    $('scanBtn').style.display = 'none';
+    $('stopScanBtn').style.display = 'block';
+    const canvas = $('scanCanvas');
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    const tick = () => {
+      if (!scanStream) return;
+      if (video.readyState === video.HAVE_ENOUGH_DATA) {
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        ctx.drawImage(video, 0, 0);
+        const img = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const found = jsQR(img.data, img.width, img.height);
+        if (found && found.data) {
+          const got = extractFromQrText(found.data);
+          if (got) {
+            toast('QR terbaca — memproses…');
+            stopScan();
+            showLoading('QR terbaca, check-in…');
+            lookupId(got).then(doCheckin).then(showSuccess).catch((e) => { showError(e.message); showManual(); });
+            return;
+          }
+        }
+      }
+      scanRaf = requestAnimationFrame(tick);
+    };
+    tick();
+  }
+  function stopScan() {
+    if (scanRaf) cancelAnimationFrame(scanRaf);
+    scanRaf = null;
+    if (scanStream) { scanStream.getTracks().forEach(t => t.stop()); scanStream = null; }
+    $('scanVideo').classList.remove('on');
+    $('scanBtn').style.display = 'block';
+    $('stopScanBtn').style.display = 'none';
   }
 
   document.addEventListener('DOMContentLoaded', () => {
     $('year').textContent = new Date().getFullYear();
-    duplicateTicker();
-    checkIn();
+    const track = $('tickerTrack');
+    track.innerHTML = track.innerHTML + ' ' + track.innerHTML.trim();
+    $('codeBtn').addEventListener('click', async () => {
+      const v = $('codeInput').value.trim();
+      if (!v) { toast('⚠️ Masukkan kode booking dulu.'); return; }
+      showLoading('Mencari reservasi…');
+      try {
+        const id = await lookupId(/^\d+$/.test(v) ? { id: v } : { code: v });
+        window.history.replaceState({}, '', '/checkin?id=' + id);
+        const data = await doCheckin(id);
+        showSuccess(data);
+      } catch (err) {
+        if (err.code === 'need_confirmation') {
+          const id = await lookupId(/^\d+$/.test(v) ? { id: v } : { code: v }).catch(() => null);
+          if (id) { toast('Menunggu pembayaran DP… cek otomatis tiap 5 detik.'); startWaitPoll(id); return; }
+        }
+        showError(err.message);
+        showManual();
+      }
+    });
+    $('codeInput').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); $('codeBtn').click(); } });
+    $('scanBtn').addEventListener('click', startScan);
+    $('stopScanBtn').addEventListener('click', stopScan);
+    window.addEventListener('beforeunload', stopScan);
+    boot();
   });
 })();
 </script>
