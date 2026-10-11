@@ -1,0 +1,22 @@
+[env] PAYMENTS_MOCK=true — QRIS berjalan simulasi (oke untuk dev).
+[env] WA provider belum diset — reminder berjalan mode mock (log).
+[env] REDIS_URL kosong — cache pakai memory.
+[WebSocket] Socket.io Gateway initialized
+[wire] Domain event subscriptions aktif (OrderPaid→stok+jurnal, DepositPaid→jurnal)
+[reminder] scheduler aktif tiap 30 menit
+[server] ODGJ Street Coffee berjalan di http://localhost:3000
+[server] Network: http://192.168.1.2:3000
+[EventBus] 📢 ReservationCreated (id: 20e37791-d764-4e89-ade5-291c425b8b91, agg: 18)
+[EventBus] 📢 ReservationUpdated (id: 52a2e250-4ab8-474c-bfc0-a8866134f290, agg: 18)
+[EventBus] 📢 ReminderSent (id: 95b75470-c471-4e0e-8f9e-1fd85c01d745, agg: 18)
+[reminder] H-1/H-2: sent=0 mock=1 failed=0
+[EventBus] 📢 ReminderSent (id: 74b8aa89-8f62-4694-a9b6-8fc931628ae7, agg: 18)
+[reminder] H-1/H-2: sent=0 mock=1 failed=0
+[EventBus] 📢 ReservationCreated (id: e4b72ed6-7e64-406a-a801-77bf931d67ad, agg: 19)
+[EventBus] 📢 ReservationSeated (id: 25967c5c-ea1e-4f22-99d9-9366b2a9c93b, agg: 19)
+[EventBus] 📢 ReservationCreated (id: 886802a9-1674-4b2a-bfdf-1c997c766149, agg: 20)
+[EventBus] 📢 DepositPaid (id: 76b18bf1-eaf3-4c69-b95d-d7ac91545531, agg: 20)
+[EventBus] 📢 JournalPosted (id: 6cd13844-6ca9-4a83-a810-093f924d41cb, agg: 9)
+[EventBus] 📢 ReminderSent (id: 4e5dcb06-8a56-4ea3-a58f-2ff4a8723002, agg: 18)
+[EventBus] 📢 ReminderSent (id: 0b6b1122-f01a-40d6-a000-00f813c748fd, agg: 20)
+[reminder] H-1/H-2: sent=0 mock=2 failed=0
